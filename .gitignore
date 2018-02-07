@@ -1,0 +1,17 @@
+# Build dir
+build/
+
+# Executables
+bin/
+
+# Visual Studio
+**/Debug
+**/Release
+*.vcproj.*
+*.vcxproj.*
+*.pdb
+*.sdf
+*.suo
+
+# Sublime
+*.sublime-*
