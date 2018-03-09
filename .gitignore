@@ -12,6 +12,13 @@ bin/
 *.pdb
 *.sdf
 *.suo
+*.opensdf
+ipch/
+
+# In/out files
+*.dat
+*.pos
+*.out
 
 # Sublime
 *.sublime-*
