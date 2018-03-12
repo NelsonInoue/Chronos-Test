@@ -132,8 +132,13 @@ int cCpu::AnalyzeCPUNaive()
 	//cutResetTimer(hTimer1);
 	//cutStartTimer(hTimer1);
 
+	//BIS
+	Time1 = clock();
+
 	CPU_ReadInPutFile(numno, numel, nummat, numprop, numdof, numnoel, numstr, numbc, numnl, GPU_arqaux, X_h, Y_h, Z_h, BC_h, Material_Param_h, Connect, Material_Id_h);
 
+	//BIS
+	Time1 = clock()-Time1;
 	//cudaThreadSynchronize();
 	//cutStopTimer(hTimer1);
 //	Time1 = cutGetTimerValue(hTimer1);
@@ -205,6 +210,8 @@ int cCpu::AnalyzeCPUNaive()
 		printf("\n");
 		printf("         Assembling Stiffness Matrix \n");
 		printf("         ========================================= ");   
+        //BIS
+		Time2 = clock();
 
 //		cutCreateTimer(&hTimer2);
 //		cudaThreadSynchronize();
@@ -272,6 +279,9 @@ int cCpu::AnalyzeCPUNaive()
 //		cudaThreadSynchronize();
 //		cutStopTimer(hTimer2);
 //		Time2 = cutGetTimerValue(hTimer2);
+
+		//BIS
+		Time2 = clock()-Time2;
 
 		printf("\n");
 		printf("         Assembly Stiffness Matrix Time: %0.3f s \n", Time2/CLOCKS_PER_SEC);
@@ -572,6 +582,8 @@ void EvaluateStressStateCPU(int numel, int nummat, int *Material_Id_h, double *M
 	printf("         Evaluating Stress State \n");
 	printf("         ========================================= ");
 
+	//BIS
+	Time = clock();
 //	cutCreateTimer(&hTimer);
 //	cudaThreadSynchronize();
 //	cutResetTimer(hTimer);
@@ -670,6 +682,9 @@ void EvaluateStressStateCPU(int numel, int nummat, int *Material_Id_h, double *M
 //	cutStopTimer(hTimer);
 //	Time = cutGetTimerValue(hTimer);
 	
+	//BIS
+	Time = clock() - Time;
+
 	printf("\n");
 	printf("         Evaluating Stress State Time: %0.3f s \n", Time/CLOCKS_PER_SEC);
 
@@ -700,6 +715,8 @@ void CPU_EvaluateStrainState(int numnoel, int numel, int numstr, int numdof, dou
 	printf("         Evaluating Strain State \n");
 	printf("         ========================================= ");
 
+	//BIS
+	Time = clock();
 //	cutCreateTimer(&hTimer);
 	//cudaThreadSynchronize();
 	//cutResetTimer(hTimer);
@@ -833,6 +850,10 @@ void CPU_EvaluateStrainState(int numnoel, int numel, int numstr, int numdof, dou
 //	cutStopTimer(hTimer);
 //	Time = cutGetTimerValue(hTimer);
 	
+	//BIS
+	Time = clock()- Time;
+
+
 	printf("\n");
 	printf("         Evaluating Strain State Time: %0.3f s \n", Time/CLOCKS_PER_SEC);
 
@@ -991,7 +1012,9 @@ void Grad_Conjugate(int numdof, int numno, int RowSize, double *Matrix_K_h, doub
 	printf("         Solving Linear Equation System \n");
 	printf("         ========================================= \n");
 	printf("         * Conjugate Gradient Method * \n\n");
-		
+	
+	//BIS
+	time = clock();
 	//cutCreateTimer(&hTimer1);
 	//cudaThreadSynchronize();
 	//cutResetTimer(hTimer1);
@@ -1044,6 +1067,8 @@ void Grad_Conjugate(int numdof, int numno, int RowSize, double *Matrix_K_h, doub
 	//cudaThreadSynchronize();
 	//cutStopTimer(hTimer1);
 	//time = cutGetTimerValue(hTimer1);
+	//BIS
+	time = clock() - time;
 	printf("         Time Execution = %0.3f s \n", time/CLOCKS_PER_SEC);
 	
 	printf("\n");	
