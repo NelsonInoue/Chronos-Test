@@ -3789,6 +3789,7 @@ void Launch_AssemblyStiffness3DQ1(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ1 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ1_d, MatPropQ1_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ1Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ1_d, MatPropQ1_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3796,6 +3797,7 @@ void Launch_AssemblyStiffness3DQ2(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ2 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ2_d, MatPropQ2_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ2Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ2_d, MatPropQ2_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3803,6 +3805,7 @@ void Launch_AssemblyStiffness3DQ3(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ3 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ3_d, MatPropQ3_d, Matrix_K_Aux_d);  
 	AssemblyStiffness3DQ3Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ3_d, MatPropQ3_d, Matrix_K_Aux_d);  
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3810,6 +3813,7 @@ void Launch_AssemblyStiffness3DQ4(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ4 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ4_d, MatPropQ4_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ4Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ4_d, MatPropQ4_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3817,6 +3821,7 @@ void Launch_AssemblyStiffness3DQ5(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ5 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ5_d, MatPropQ5_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ5Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ5_d, MatPropQ5_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3824,6 +3829,7 @@ void Launch_AssemblyStiffness3DQ6(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ6 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ6_d, MatPropQ6_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ6Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ6_d, MatPropQ6_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3831,6 +3837,7 @@ void Launch_AssemblyStiffness3DQ7(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ7 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ7_d, MatPropQ7_d, Matrix_K_Aux_d);
 	AssemblyStiffness3DQ7Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ7_d, MatPropQ7_d, Matrix_K_Aux_d);
+	cudaDeviceSynchronize();
 }
 	
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
@@ -3838,6 +3845,7 @@ void Launch_AssemblyStiffness3DQ8(dim3 numBlocksSM, dim3 threadsPerBlockSM, int 
 {
 	//AssemblyStiffness3DQ8 <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ8_d, MatPropQ8_d, Matrix_K_Aux_d); 
 	AssemblyStiffness3DQ8Mod <<<numBlocksSM, threadsPerBlockSM>>> (numno, RowSize, CoordQ8_d, MatPropQ8_d, Matrix_K_Aux_d); 
+	cudaDeviceSynchronize();
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
