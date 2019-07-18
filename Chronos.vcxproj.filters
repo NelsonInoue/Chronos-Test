@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src/Chronos.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FemOneGPU.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Input.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\FemOneGPU.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\defs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Input.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\CG.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src/Cuda_File.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\StiffMatrix.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{a882fcdc-f73d-4971-9fe0-3a8301039211}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{f51ca9b3-8928-4a9a-b53d-596eb5b30e40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cuda">
+      <UniqueIdentifier>{0b2f29fa-81ba-44a0-b661-5870ceb3f281}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
