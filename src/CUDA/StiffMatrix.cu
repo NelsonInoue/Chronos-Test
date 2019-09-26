@@ -37,14 +37,16 @@ extern "C" void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int 
 extern "C" void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
 	int *connect, double *coord, double *prop, double *K, int *offfull);
 
-extern "C" void ImpositionBoundaryCondition(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K);
-
 extern "C" void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
 	int *connect, double *coord, double *X, double *strain);
 
-extern "C" void EvaluateStressState(int Id, int BlockSizeX, int _iNumMeshElem, int _iNumElasMat, int *connect, double *prop, double *strain, double *stress);
+extern "C" void EvaluateStressState(int Id, int BlockSizeX, int _iNumMeshElem, int _iNumElasMat, int *connect, int *LinkMeshColor, double *prop, double *strain, double *stress);
+
+extern "C" void EvaluateNodalForceColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolornodalforce, int numelcolornodalforceprv,
+			int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B);
 
 //=============================================================================
+
 __device__ void SolidMatPropMatrix(double E, double p, double C[6][6])
 {
 	double sho;
@@ -214,6 +216,9 @@ __device__ void Bmatrix(double deriv_x[8], double deriv_y[8], double deriv_z[8],
 }
 
 //=============================================================================
+
+
+//=============================================================================
 __device__ void AssemblyK(double coeff, double C[6][6], double B[6][24], double _k[24][24])
 {
 	int i, j, k;
@@ -302,42 +307,6 @@ __device__ void AssemblyK_OPT(int numno, double coeff, double C[6][6], double B[
 }
 
 //==============================================================================
-__global__ void ImpositionBoundaryConditionKernel(int numno, int numnoprv, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K)
-{
-
-	// _iNumSuppNodes = total number of supports
-
-	int i;
-	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
-	const int yIndex = blockIdx.y*blockDim.y + threadIdx.y;
-	const int thread_id = (gridDim.x*blockDim.x)*yIndex + xIndex;
-
-	if(thread_id < _iNumSuppNodes) {  // -----------------------
-
-		if((supp[thread_id]-1) >= numnoprv && (supp[thread_id]-1) < numnoprv+numno) {
-
-			for(i=0; i<_inumDiaPart; i++) {
-
-				if(supp[thread_id+1*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-numnoprv-1)   + i*3*numno] = 0.;
-				if(supp[thread_id+2*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-numnoprv-1)+1 + i*3*numno] = 0.;
-				if(supp[thread_id+3*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-numnoprv-1)+2 + i*3*numno] = 0.;
-
-			}
-
-		}
-
-	}
-
-}
-
-//=====================================================================================================================
-void ImpositionBoundaryConditionCuda(dim3 threadsPerBlock, dim3 blocksPerGrid, int numno, int numnoprv, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K)
-{
-	//Perform GPU computations
-	ImpositionBoundaryConditionKernel<<<blocksPerGrid, threadsPerBlock>>>(numno, numnoprv, _iNumSuppNodes, _inumDiaPart, supp, K);
-}
-
-//==============================================================================
 __global__ void EvaluateMmatrixKernel(int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M)
 {
 	int i, off;
@@ -378,50 +347,7 @@ void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNod
 
 }
 
-//==============================================================================
-__global__ void ImpositionBoundaryConditionKernel(int _iNumMeshNodes, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K)
-{
 
-	// _iNumSuppNodes = total number of supports
-
-	int i;
-	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
-	const int yIndex = blockIdx.y*blockDim.y + threadIdx.y;
-	const int thread_id = (gridDim.x*blockDim.x)*yIndex + xIndex;
-
-	if(thread_id < _iNumSuppNodes) {  // -----------------------
-
-		for(i=0; i<_inumDiaPart; i++) {
-
-			if(supp[thread_id+1*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-1)   + i*3*_iNumMeshNodes] = 0.;
-			if(supp[thread_id+2*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-1)+1 + i*3*_iNumMeshNodes] = 0.;
-			if(supp[thread_id+3*_iNumSuppNodes] == 1) K[3*(supp[thread_id]-1)+2 + i*3*_iNumMeshNodes] = 0.;
-
-		}
-
-	}
-
-}
-
-//=====================================================================================================================
-void ImpositionBoundaryCondition(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K)
-{
-	double time;
-
-	cudaSetDevice(Id);
-
-	dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
-	dim3 blocksPerGrid(int(sqrt(double(_iNumSuppNodes))/BlockSizeX)+1, int(sqrt(double(_iNumSuppNodes))/BlockSizeX)+1);
-
-	time = clock();
-
-	ImpositionBoundaryConditionKernel<<<blocksPerGrid, threadsPerBlock>>>(_iNumMeshNodes, _iNumSuppNodes, _inumDiaPart, supp, K);
-
-	cudaDeviceSynchronize();
-
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
-
-}
 
 //==============================================================================
 __global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcolor, int numelcolorprv, int numdof, int nummat, int *connect, double *coord, double *prop, double *K, int *offfull)
@@ -562,7 +488,7 @@ void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int 
 
 	cudaSetDevice(Id);
 
-	AssemblyStiffnessMatrixKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, prop, K, offfull);
+	AssemblyStiffnessMatrixKernel<<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, prop, K, offfull);
 
 	cudaDeviceSynchronize();
 
@@ -760,8 +686,8 @@ void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, 
 
 	cudaSetDevice(Id);
 
-	EvaluateStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
-	//EvaluateAverageStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
+	//EvaluateStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
+	EvaluateAverageStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
 
 	cudaDeviceSynchronize();
 
@@ -830,7 +756,7 @@ __global__ void EvaluateStressStateKernel(int numel, int nummat, int *connect, d
 }
 
 //==============================================================================
-__global__ void EvaluateAverageStressStateKernel(int numel, int nummat, int *connect, double *prop, double *strain, double *stress)
+__global__ void EvaluateAverageStressStateKernel(int numel, int nummat, int *connect, int *LinkMeshColor, double *prop, double *strain, double *stress)
 { 
 
 	int i;
@@ -842,8 +768,8 @@ __global__ void EvaluateAverageStressStateKernel(int numel, int nummat, int *con
 
 	if(thread_id < numel) {  // ------------------------------------------------------------------------------------
 
-		E = prop[(connect[thread_id + numel])-1];
-		p = prop[(connect[thread_id + numel])-1+nummat];
+		E = prop[(connect[LinkMeshColor[thread_id] + numel])-1];
+		p = prop[(connect[LinkMeshColor[thread_id] + numel])-1+nummat];
 
 		SolidMatPropMatrix(E, p, C);
 
@@ -876,22 +802,117 @@ __global__ void EvaluateAverageStressStateKernel(int numel, int nummat, int *con
 }
 
 //=====================================================================================================================
-void EvaluateStressState(int Id, int BlockSizeX, int numel, int nummat, int *connect, double *prop, double *strain, double *stress)
+void EvaluateStressState(int Id, int BlockSizeX, int numel, int nummat, int *connect, int *LinkMeshColor, double *prop, double *strain, double *stress)
 {
 	double time;
 
 	cudaSetDevice(Id);
+	cudaMemset(stress, 0, sizeof(double)*numel*6);
 
 	dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
 	dim3 blocksPerGrid(int(sqrt(double(numel))/BlockSizeX)+1, int(sqrt(double(numel))/BlockSizeX)+1);
 
 	time = clock();
 
-	//EvaluateAverageStressStateKernel <<<blocksPerGrid, threadsPerBlock>>>(numel, nummat, connect, prop, strain, stress);
-	EvaluateStressStateKernel <<<blocksPerGrid, threadsPerBlock>>>(numel, nummat, connect, prop, strain, stress);
+	EvaluateAverageStressStateKernel <<<blocksPerGrid, threadsPerBlock>>>(numel, nummat, connect, LinkMeshColor, prop, strain, stress);
+	//EvaluateStressStateKernel <<<blocksPerGrid, threadsPerBlock>>>(numel, nummat, connect, prop, strain, stress);
 
 	cudaDeviceSynchronize();
 
 	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+
+}
+
+//==============================================================================
+__global__ void EvaluateNodalForceKernel(int numno, int numel, int numelcolor, int numelcolorprv, int numdof, int nummat, int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B)
+{
+	double r, s, t;  
+	double xgaus[2], wgaus[2]; 
+	int ig, jg, kg;  
+	int i, j, no;
+	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
+	double detjac, deriv_x[8], deriv_y[8], deriv_z[8];
+
+	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
+	const int yIndex = blockIdx.y*blockDim.y + threadIdx.y;
+	const int thread_id = (gridDim.x*blockDim.x)*yIndex + xIndex;
+
+	if(thread_id < numelcolor) {  // ------------------------------------------------------------------------------------
+
+		for(i=0; i<8; i++) {
+
+			no = connect[LinkMeshMeshColor[thread_id + numelcolorprv] + (i+3)*numel]-1;
+
+			X[i] = coord[no];
+			Y[i] = coord[no+numno]; 
+			Z[i] = coord[no+2*numno];
+
+		}
+
+		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+		// Points of integration:
+		xgaus[0]=-0.577350269189626;
+		xgaus[1]= 0.577350269189626;
+		wgaus[0]= 1.;
+		wgaus[1]= 1.;
+
+		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+		for(ig=0; ig<2; ig++) {                                      // =================== Loop ig ===================
+			s=xgaus[ig];
+
+			for(jg=0; jg<2; jg++) {                                  // =================== Loop jg ===================
+				r=xgaus[jg]; 
+
+				for(kg=0; kg<2; kg++) {                              // =================== Loop kg ===================
+					t=xgaus[kg]; 
+
+					// Shape function derivative:
+					DerivPhiRST(r, s, t, phi_r, phi_s, phi_t);
+
+					// Evaluate the Jacobian determinant and inverse Jacobian matrix:
+					Jacobian(phi_r, phi_s, phi_t, jac, X, Y, Z, detjac, invjac);
+
+					// Evaluate the global derivatives of the shape functions:
+					DerivXYZ(invjac, phi_r, phi_s, phi_t, deriv_x, deriv_y, deriv_z);
+
+					// *******************************************************************************************************
+
+					for(i=0; i<8; i++) {
+
+						no = connect[LinkMeshMeshColor[thread_id + numelcolorprv] + (i+3)*numel]-1;
+
+						// Fx
+						B[3*no  ] += deriv_x[i]*detjac*dP[LinkMeshCellColor[thread_id + numelcolorprv]];
+
+						// Fy
+						B[3*no+1] += deriv_y[i]*detjac*dP[LinkMeshCellColor[thread_id + numelcolorprv]];
+
+						// Fz
+						B[3*no+2] += deriv_z[i]*detjac*dP[LinkMeshCellColor[thread_id + numelcolorprv]];
+					                   
+					}
+
+				}                                                    // =================== Loop kg ===================
+
+			}                                                        // =================== Loop jg ===================
+
+		}                                                            // =================== Loop ig ===================
+
+	}  // -------------------------------------------------------------------------------------------------------------
+
+}
+
+//=====================================================================================================================
+void EvaluateNodalForceColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
+			int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B)
+{
+
+	cudaSetDevice(Id);
+
+	EvaluateNodalForceKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, LinkMeshMeshColor, LinkMeshCellColor, dP, B);
+
+	cudaDeviceSynchronize();
 
 }

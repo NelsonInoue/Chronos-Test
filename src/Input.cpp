@@ -19,18 +19,24 @@ using namespace std;
 // Public functions:
 //
 
+//=============================================================================
+cInput::cInput()
+{
+
+}
+
 // ============================  NextLabel  ================================
 
-int NextLabel( char label[80] )
+int cInput::NextLabel2( char label[80] )
 {
  int c;
 
- while( (c = fgetc(in)) != '%' )
+ while( (c = fgetc(inFile)) != '%' )
  {        // finds next % 
   if( c == EOF )
    return( 0 );
  }
- if( fscanf( in, "%s", label ) != 1 )       // scan label string 
+ if( fscanf( inFile, "%s", label ) != 1 )       // scan label string 
   return( 0 );
  else
   return( 1 );
@@ -40,16 +46,16 @@ int NextLabel( char label[80] )
 
 // ===========================  ReadString  ================================
 
-int ReadString( char string[80] )
+int cInput::ReadString( char string[80] )
 {
  int i, c;
 
- while( (c = fgetc( in )) != '\'' )
+ while( (c = fgetc( inFile )) != '\'' )
  {
   // finds first '
   if( c == EOF ) return( 0 );
  }
- for( i = 0; (c = fgetc( in )) != '\''; i++ )
+ for( i = 0; (c = fgetc( inFile )) != '\''; i++ )
  {
   // fill string until next '
   if( c == EOF ) return( 0 );
@@ -63,16 +69,16 @@ int ReadString( char string[80] )
 
 // =============================  StrUpper  ================================
 
-void StrUpper( char *str )
+/*void cInput::StrUpper( char *str )
 {
   int l = strlen(str);
 
   for (int i = 0; i < l; i++) str[i] = toupper(str[i]);
-}
+}*/
 
 // =============================  StrLower  ================================
 
-void StrLower( char *str )
+void cInput::StrLower( char *str )
 {
   int l = strlen(str);
 
@@ -84,18 +90,17 @@ void StrLower( char *str )
 
 #define streq(s1,s2)	((s1[0]==s2[0]) && strcmp(s1,s2)==0)
 
-//=============================================================================
-cInput::cInput()
-{
-
-}
-
 //==============================================================================
-void cInput::ReadInputFile()
+void cInput::ReadInputFile(char* inputPath)
 {
 	double time;
 
 	time = clock();
+
+	if(inputPath)
+		strcpy(GPU_arqaux, inputPath);
+
+	inFile  = fopen(GPU_arqaux, "r");
 
 	// ========= Reading nanalysis model =========
 
@@ -137,7 +142,44 @@ void cInput::ReadInputFile()
 
 	ReadGpuSpecification();  // GPUs specification
 
+	// ========= Read number of GPUs and set GPU =========
+
+	ReadNumberOfGpus();
+
 	printf("         Time: %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+
+}
+
+//==============================================================================
+void cInput::ReadMeshGeometry()  // // For coupling
+{
+	
+	char label[80];
+
+	// ========= Reading mesh geometry data =========
+
+	//std::rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
+
+	while (1)
+	{                
+		if (NextLabel2(label) == 0)
+		{
+			printf("\nNode:\n Invalid neutral file or label END doesn't exist\n\n" );
+			exit(0);
+		}
+		else if (streq(label, "GEOMETRY.SIZES"))
+		{
+
+			fscanf(inFile, "%d %d %d %d %d %d %d %d %d", &nx, &ny, &nz, &nsi1, &nsi2, &nsj1, &nsj2, &nov, &nun);
+			break;
+
+		}
+		else if (streq(label, "END"))
+			break;
+	}
+
+	// --------------------------------------------------------------------------------------------
 
 }
 
@@ -146,11 +188,12 @@ int cInput::ReadAnalysisModel()
 {
 	char label[80];
 
-	rewind(in);
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while( 1 )
 	{
-		if( NextLabel( label ) == 0 )
+		if( NextLabel2( label ) == 0 )
 		{
 			printf( "\n Invalid neutral file or label END doesn't exist\n\n" );
 			exit( 0 );
@@ -227,11 +270,12 @@ int cInput::ReadNodeAttribute()
 
 	// ========= Reading nodal coordinate data =========
 
-	rewind(in);
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while (1)
 	{                
-		if (NextLabel(label) == 0)
+		if (NextLabel2(label) == 0)
 		{
 			printf("\nNode:\n Invalid neutral file or label END doesn't exist\n\n" );
 			exit(0);
@@ -270,7 +314,7 @@ int cInput::ProcessNodeCoord()
 	int i, id, N;
 	double x, y, z;
 
-	if(fscanf(in, "%d", &_iNumMeshNodes) != 1) {
+	if(fscanf(inFile, "%d", &_iNumMeshNodes) != 1) {
 		printf("\n Error on reading number of nodes !!!\n\n" );
 		return(0);
 	}
@@ -280,7 +324,7 @@ int cInput::ProcessNodeCoord()
 
 	for(i=0; i<_iNumMeshNodes; i++) {
 
-		if(fscanf(in, "%d %lf %lf %lf", &id, &x, &y, &z) != 4){
+		if(fscanf(inFile, "%d %lf %lf %lf", &id, &x, &y, &z) != 4){
 			printf("\nError on reading nodes coordinates, node Id = %d", id);
 			return(0);
 		}
@@ -303,7 +347,7 @@ int cInput::ProcessNodeSupport()
 	int i, id, dx, dy, dz, rx, ry, rz;
 	int N;
 
-	if (fscanf(in, "%d", &_iNumSuppNodes) != 1)
+	if (fscanf(inFile, "%d", &_iNumSuppNodes) != 1)
 	{
 		printf("\n Error on reading number of node supports !!!\n\n");
 		exit(0);
@@ -316,14 +360,14 @@ int cInput::ProcessNodeSupport()
 
 	for (i=0; i<_iNumSuppNodes; i++)
 	{
-		if (fscanf(in, "%d %d %d %d %d %d %d", &id, &dx, &dy, &dz, &rx, &ry, &rz) != 7)
+		if (fscanf(inFile, "%d %d %d %d %d %d %d", &id, &dx, &dy, &dz, &rx, &ry, &rz) != 7)
 		{
 			printf("\n Error on reading node supports !!!\n\n");
 			exit(0);
 		}
 
 		supp_h[i                   ] = id;
-		supp_h[i +   _iNumSuppNodes] = dx;
+		supp_h[i + 1*_iNumSuppNodes] = dx;
 		supp_h[i + 2*_iNumSuppNodes] = dy;
 		supp_h[i + 3*_iNumSuppNodes] = dz;
 
@@ -342,7 +386,7 @@ int cInput::ProcessNodalForces()
 
 	// Read the number of nodal loads
 
-	if (fscanf(in, "%d", &_iNumConcLoads) != 1)
+	if (fscanf(inFile, "%d", &_iNumConcLoads) != 1)
 	{
 		printf("\nError on reading number of nodal loads !!!\n\n");
 		exit(0);
@@ -358,7 +402,7 @@ int cInput::ProcessNodalForces()
 
 	for (i=0; i<_iNumConcLoads; i++)
 	{
-		if (fscanf(in,"%d %lf %lf %lf %lf %lf %lf", &id, &fx, &fy, &fz, &mx, &my, &mz) != 7)
+		if (fscanf(inFile,"%d %lf %lf %lf %lf %lf %lf", &id, &fx, &fy, &fz, &mx, &my, &mz) != 7)
 		{
 			printf("\n Error on reading nodal loads (number %d) !!!\n\n", i+1);
 			exit(0);
@@ -382,7 +426,7 @@ int cInput::ProcessNodalForces()
 	char label[80];
 
 	_iNumQuad = 0;
-	rewind( in );
+	rewind(inFile);
 
 	while (1)
 	{
@@ -420,7 +464,7 @@ return(1);
 	int i, id, r, s, t, rr, ss, tt;
 	int N;
 
-	if (fscanf(in, "%d", &_iNumQuad) != 1 || _iNumQuad == 0)
+	if (fscanf(inFile, "%d", &_iNumQuad) != 1 || _iNumQuad == 0)
 	{
 		printf("\n Error on reading number of integration orders !!!\n\n");
 		exit(0);
@@ -433,7 +477,7 @@ return(1);
 
 	for(i = 0; i<_iNumQuad; i++) 
 	{
-		fscanf(in, "%d %d %d %d %d %d %d", &id, &r, &s, &t, &rr, &ss, &tt);
+		fscanf(inFile, "%d %d %d %d %d %d %d", &id, &r, &s, &t, &rr, &ss, &tt);
 
 		QuadOrder[i              ] = r;
 		QuadOrder[i +   _iNumQuad] = s;
@@ -452,26 +496,22 @@ int cInput::ReadMaterialProp()
 	int i;
 	char label[80];     // Sections labels
 
-	rewind( in );
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while( 1 )
 	{
-		if( NextLabel( label ) == 0 )
+		if( NextLabel2( label ) == 0 )
 		{
 			printf( "\n Invalid neutral file or label END doesn't exist\n\n" );
 			exit( 0 );
 		}
 		else if( streq( label, "MATERIAL" ) )
 		{
-			fscanf( in,"%d", &_iNumMeshMat );
+			fscanf(inFile,"%d", &_iNumMeshMat );
 			MatType = (int *)malloc(sizeof(int)*7);
 			//cudaMallocManaged((void **)&MatType, sizeof(int)*7);
 			for(i=0; i<7; i++) MatType[i] = 0;
-		}
-		else if( streq( label, "MATERIAL.PROPERTY.DENSITY" ) )
-		{
-			//ProcessDensity( );
-			MatType[0] = 1;
 		}
 		else if( streq( label, "MATERIAL.ISOTROPIC" ) )
 		{
@@ -525,8 +565,9 @@ int cInput::ReadMaterialProp()
 int cInput::ProcessElasticIsotropic()
 {
 	int i, label;
+	double prop1, prop2, prop3;
 
-	if( fscanf( in, "%d", &_iNumElasMat ) != 1 )
+	if( fscanf(inFile, "%d", &_iNumElasMat ) != 1 )
 	{
 		printf( "\n Error on reading number of elastic isotropic materials !!!\n\n" );
 		exit( 0 );
@@ -536,20 +577,23 @@ int cInput::ProcessElasticIsotropic()
 
 	MatElastIdx = (int *)malloc(sizeof(int)*_iNumElasMat);
 	prop_h = (double *)malloc(sizeof(double)*2*_iNumElasMat);
-	//cudaMallocManaged((void **)&MatElastIdx, sizeof(int)*_iNumElasMat);
-	//cudaMallocManaged((void **)&prop_h, sizeof(double)*2*_iNumElasMat);  // _dE and _dNu = 2 properties
+	Material_Density_h = (double *)malloc(_iNumElasMat*3*(sizeof(double)));
 
 	for(i = 0; i<_iNumElasMat; i++ )
 	{
-		if( fscanf( in, "%d %lf %lf", &label, &_dE, &_dNu) != 3 )
+		if( fscanf(inFile, "%d %lf %lf %lf %lf %lf", &label, &_dE, &_dNu, &prop1, &prop2, &prop3) != 6 )
 		{
 			printf( "\n Error on reading elastic isotropic materials !!!\n\n" );
 			exit( 0 );
 		}
 
-		MatElastIdx [i               ] = label;
-		prop_h[i               ] = _dE;
-		prop_h[i + _iNumElasMat] = _dNu;
+		MatElastIdx[i] = label;
+		prop_h[i             ] = _dE;
+		prop_h[i+_iNumElasMat] = _dNu;
+
+		Material_Density_h[i+0*_iNumElasMat] = prop1;
+		Material_Density_h[i+1*_iNumElasMat] = prop2;
+		Material_Density_h[i+2*_iNumElasMat] = prop3;
 
 		//printf("%d %f %f \n", MatElastIdx [i           ], prop_h[i           ], prop_h[i + num_eiso]);
 
@@ -571,17 +615,18 @@ int cInput::ReadElementProp( void )
 
 	// Read element data
 
-	rewind( in );
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while( 1 )
 	{
-		if( NextLabel( label ) == 0 )
+		if( NextLabel2( label ) == 0 )
 		{
 			printf( "\n Invalid neutral file or label END doesn't exist\n\n" );
 			exit( 0 );
 		}
 		else if( streq( label, "ELEMENT" ))
-			fscanf( in,"%d", &n );
+			fscanf(inFile,"%d", &n );
 		/*else if (streq(label, "ELEMENT.PSTRESS.T3")) ProcessPSTRESST3( );
 		else if (streq(label, "ELEMENT.PSTRESS.T6")) ProcessPSTRESST6( );
 		else if (streq(label, "ELEMENT.PSTRESS.Q4")) ProcessPSTRESSQ4( );
@@ -636,7 +681,7 @@ int cInput::ProcessQ4()
 	_iNumShpNodes = 4;
 	_iNumMapNodes = 4;
 
-	if( fscanf( in, "%d", &_iNumMeshElem ) != 1 )
+	if( fscanf(inFile, "%d", &_iNumMeshElem ) != 1 )
 	{
 		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
 		exit( 0 );
@@ -649,7 +694,7 @@ int cInput::ProcessQ4()
 
 	for( int i = 0; i < _iNumMeshElem; i++ ) {
 
-		if (fscanf(in, "%d %d %d %d %d %d %d %d", &elm, &mat, &thc, &ord, &lb1, &lb2, &lb3, &lb4) != 8)
+		if (fscanf(inFile, "%d %d %d %d %d %d %d %d", &elm, &mat, &thc, &ord, &lb1, &lb2, &lb3, &lb4) != 8)
 		{
 			printf( "\n Error on reading elastic isotropic materials !!!\n\n" );
 			exit( 0 );
@@ -682,7 +727,7 @@ int cInput::ProcessBRICK8( void )
 	_iNumShpNodes = 8;
 	_iNumMapNodes = 8;
 
-	if( fscanf( in, "%d", &_iNumMeshElem ) != 1 )
+	if( fscanf(inFile, "%d", &_iNumMeshElem ) != 1 )
 	{
 		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
 		exit( 0 );
@@ -695,23 +740,23 @@ int cInput::ProcessBRICK8( void )
 
 	for( int i = 0; i < _iNumMeshElem; i++ ) {
 
-		if (fscanf(in, "%d %d %d %d %d %d %d %d %d %d %d", &elm, &mat, &ord, &lb1, &lb2, &lb3, &lb4, &lb5, &lb6, &lb7, &lb8) != 11)
+		if (fscanf(inFile, "%d %d %d %d %d %d %d %d %d %d %d", &elm, &mat, &ord, &lb1, &lb2, &lb3, &lb4, &lb5, &lb6, &lb7, &lb8) != 11)
 		{
 			printf( "\n Error on reading elastic isotropic materials !!!\n\n" );
 			exit( 0 );
 		}
 
-		connect_h[i                   ] = elm;
-		connect_h[i +  1*_iNumMeshElem] = mat;
-		connect_h[i +  2*_iNumMeshElem] = ord;
-		connect_h[i +  3*_iNumMeshElem] = lb1;
-		connect_h[i +  4*_iNumMeshElem] = lb2;
-		connect_h[i +  5*_iNumMeshElem] = lb3;
-		connect_h[i +  6*_iNumMeshElem] = lb4;
-		connect_h[i +  7*_iNumMeshElem] = lb5;
-		connect_h[i +  8*_iNumMeshElem] = lb6;
-		connect_h[i +  9*_iNumMeshElem] = lb7;
-		connect_h[i + 10*_iNumMeshElem] = lb8;
+		connect_h[i                   ] = elm;  // 0
+		connect_h[i +  1*_iNumMeshElem] = mat;  // 1
+		connect_h[i +  2*_iNumMeshElem] = ord;  // 2
+		connect_h[i +  3*_iNumMeshElem] = lb1;  // 3 => Element starts
+		connect_h[i +  4*_iNumMeshElem] = lb2;  // 4
+		connect_h[i +  5*_iNumMeshElem] = lb3;  // 5
+		connect_h[i +  6*_iNumMeshElem] = lb4;  // 6
+		connect_h[i +  7*_iNumMeshElem] = lb5;  // 7 => Top starts
+		connect_h[i +  8*_iNumMeshElem] = lb6;  // 8
+		connect_h[i +  9*_iNumMeshElem] = lb7;  // 9
+		connect_h[i + 10*_iNumMeshElem] = lb8;  // 10
 
 	} 
 
@@ -724,7 +769,7 @@ int cInput::ProcessNumberbyColor()
 {
 	int i, j, elms, numcolor;
 
-	if( fscanf( in, "%d", &numgpu ) != 1 )
+	if( fscanf(inFile, "%d", &numgpu ) != 1 )
 	{
 		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
 		exit( 0 );
@@ -738,7 +783,7 @@ int cInput::ProcessNumberbyColor()
 
 	for(j=0; j<numgpu; j++) {
 
-		fscanf(in, "%d", &numcolor);
+		fscanf(inFile, "%d", &numcolor);
 
 		NumColorbyGPU[j] = numcolor;
 
@@ -746,7 +791,7 @@ int cInput::ProcessNumberbyColor()
 
 		for(i=0; i<numcolor; i++) {
 
-			fscanf(in, "%d", &elms);
+			fscanf(inFile, "%d", &elms);
 			NumElemByGPUbyColor[j][i] = elms;
 
 		}
@@ -763,11 +808,12 @@ int cInput::ReadDiagonalFormat()
 	char label[80];
 
 	_iNumQuad = 0;
-	rewind( in );
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while (1)
 	{
-		if (NextLabel(label) == 0)
+		if (NextLabel2(label) == 0)
 		{
 			printf("\n Invalid neutral file or label END doesn't exist.\n\n");
 			exit(0);
@@ -803,7 +849,7 @@ int cInput::ProcessDiaFormatPartFull()
 {
 	int i, elms;
 
-	if( fscanf( in, "%d", &_inumDiaPart ) != 1 )
+	if( fscanf(inFile, "%d", &_inumDiaPart ) != 1 )
 	{
 		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
 		exit( 0 );
@@ -814,7 +860,7 @@ int cInput::ProcessDiaFormatPartFull()
 
 	for(i=0; i<_inumDiaPart; i++) {
 
-		fscanf(in, "%d", &elms);
+		fscanf(inFile, "%d", &elms);
 		off_h[i] = elms;
 
 	}
@@ -831,7 +877,7 @@ int cInput::ProcessDiaFormatFullPart()
 {
 	int i, a1, a2;
 
-	if( fscanf( in, "%d", &_inumDiaFull ) != 1 )
+	if( fscanf(inFile, "%d", &_inumDiaFull ) != 1 )
 	{
 		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
 		exit( 0 );
@@ -846,7 +892,7 @@ int cInput::ProcessDiaFormatFullPart()
 
 	for(i=0; i<_inumDiaPart; i++) {
 
-		fscanf(in, "%d %d", &a1, &a2);
+		fscanf(inFile, "%d %d", &a1, &a2);
 		offfull_h[a1] = a2;
 
 	}
@@ -964,11 +1010,12 @@ void cInput::ReadNumberOfGpus()
 {
 	char label[80];
 
-	rewind( in );
+	//rewind(inFile);
+	inFile  = fopen(GPU_arqaux, "r");
 
 	while (1)
 	{
-		if (NextLabel(label) == 0)
+		if (NextLabel2(label) == 0)
 		{
 			printf("\n Invalid neutral file or label END doesn't exist.\n\n");
 			exit(0);
@@ -992,7 +1039,7 @@ void cInput::ReadNumberOfGpus()
 // ============================ ProcessReadNumberOfGpus ==============================
 void cInput::ProcessReadNumberOfGpus()
 {
-	if(fscanf(in, "%d %d", &numgpu, &setgpu) != 2) {
+	if(fscanf(inFile, "%d %d", &numgpu, &setgpu) != 2) {
 	}
 
 	// numgpu = 100 to use all the GPUs on the computer

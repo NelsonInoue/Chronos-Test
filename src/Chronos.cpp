@@ -8,6 +8,7 @@
 #include "FemOneGPU.h"
 #include "input.h"
 #include "time.h"
+#include <direct.h>
 
 FILE *in;
 FILE *pos;
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
 			pcFemOneGPU = new cFemOneGPU();
 			pcFemOneGPU->Id = in->setgpu;
 			delete in;
-			pcFemOneGPU->AnalyzeFemOneGPU();
+			//pcFemOneGPU->AnalyzeFemOneGPU();
 		}
 		delete pcFemOneGPU;
 

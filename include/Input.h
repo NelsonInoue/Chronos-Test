@@ -8,12 +8,12 @@ typedef class cInput *pcInput, &rcInput;
 
 using namespace std;
 
-extern FILE *in;
-int  NextLabel   ( char [80] );
+/*extern FILE *in;
+int  NextLabel2   ( char [80] );
 int  ReadString  ( char [80] );
 void PrintHeader ( void );
 void StrUpper    ( char * );
-void StrLower    ( char * );
+void StrLower    ( char * );*/
 
 class cInput
 {
@@ -30,6 +30,7 @@ public:
 	int *off_h, *offfull_h;
 	double *KDia;
 	double *B_h, *M_full;
+	double *Material_Density_h;
 
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------
 	int _iNumMeshElem;     // Number of mesh elements
@@ -47,7 +48,12 @@ public:
 	int _inumDiaFull;
 	int _inumDiaPart;      
 
-	int nummat, numprop, numdof, numnoel, numstr, numbc, numnl, imax, jmax, kmax, numgpu, setgpu;
+	int nummat, numprop, numdof, numnoel, numstr, numbc, numnl, numgpu, setgpu;
+	int nx, ny, nz, nsi1, nsi2, nsj1, nsj2, nov, nun;
+
+	// imax             Number of nodes in x direction
+	// jmax             Number of nodes in y direction
+	// kmax             Number of nodes in z direction
 
 	double _dE;            // Young's modulus
 	double _dNu;           // Poisson's ratio
@@ -56,8 +62,11 @@ public:
 
 	char _anmType[30];
 
+	char GPU_arqaux[80];
+	FILE *inFile;
+
 	cInput();
-	void ReadInputFile();
+	void ReadInputFile(char* inputPath);
 	int ReadAnalysisModel();
 	//int ReadNumericalIntegration();
 	int ReadMaterialProp();
@@ -78,6 +87,13 @@ public:
 	int ProcessNumberbyColor( );
 	void ProcessReadNumberOfGpus();
 	void ReadGpuSpecification();
+
+	void ReadMeshGeometry();  // For coupling
+
+	int NextLabel2(char label[80]);
+	int ReadString(char string[80]);
+	//void StrUpper(char *str);
+	void StrLower(char *str);
 
 };
 
