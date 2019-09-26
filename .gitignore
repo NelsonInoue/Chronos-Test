@@ -4,6 +4,10 @@ build/
 # Executables
 bin/
 
+# Library
+lib/*.lib
+lib/*.dll
+
 # Visual Studio
 **/Debug
 **/Release
