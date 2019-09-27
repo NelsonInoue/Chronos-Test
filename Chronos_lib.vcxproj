@@ -54,7 +54,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)\lib\</OutDir>
+    <OutDir>$(ProjectDir)\lib\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)\build\$(Configuration)\</IntDir>
     <IncludePath>D:\Projetos\Hermes\lib\Chronos\include;$(IncludePath)</IncludePath>
   </PropertyGroup>

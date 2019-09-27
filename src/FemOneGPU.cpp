@@ -22,7 +22,6 @@
 #include <cuda_runtime.h>
 #include "defs.h"
 #include <vector>
-#include "StiffMatrix.h"
 
 // Utilities and system includes
 
@@ -32,7 +31,6 @@
 // External Functions for Multi GPUs Implementation						 
 //----------------------------------------------------
 
-/*
 extern "C" void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M);
 
 extern "C" void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
@@ -42,17 +40,17 @@ extern "C" void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBloc
 			int *connect, double *coord, double *X, double *strain);
 
 extern "C" void EvaluateStressState(int Id, int BlockSizeX, int _iNumMeshElem, int _iNumElasMat, int *connect, int *LinkMeshColor, double *prop, double *strain, double *stress); 
-*/                                           
+                                         
 extern "C" void ImpositionBoundaryCondition(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumSuppNodes, int _inumDiaPart, int *supp, double *K, double *B);
 
 extern "C" void ImpositionBoundaryConditionNeumann(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumSuppNodes, int *supp, double *B);
 
 extern "C" void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSizeX, int BlockMultiProcPerGpu, int _iNumMeshNodes, double *B, double *M, double *K, int *off, double *t, double *CGTime, int *CGIter, double *CGError, double *X, double *R, double *D, double *Q, double *S,
 		double *delta_1_aux, double *delta_new, double *dTq, double *delta_old, double *delta_new_h);
-/*
+
 extern "C" void EvaluateNodalForceColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolornodalforce, int numelcolornodalforceprv,
 			int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B);
-*/
+
 //=============================================================================
 cFemOneGPU::cFemOneGPU()
 {
@@ -1095,14 +1093,6 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 
 	std::vector<double> F_h(in->_iNumDofNode*in->_iNumMeshNodes);
 	cudaMemcpy(&F_h[0], B, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyDeviceToHost);
-
-	printf("kkk");
-	int aaa = 0;
-	for (int i=0; i< F_h.size(); ++i){
-		if (F_h[i] != 0)
-			aaa = 2;
-	}
-	aaa=3;
 
 	// ============================================================
 	//IF_DEBUGGING { 
