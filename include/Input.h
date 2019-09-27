@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*  Copyright (c) 2019 <GTEP> - All Rights Reserved                            *
+*  This file is part of HERMES Project.                                       *
+*  Unauthorized copying of this file, via any medium is strictly prohibited.  *
+*  Proprietary and confidential.                                              *
+*                                                                             *
+*  Developers:                                                                *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #ifndef	_Input_H
 #define	_Input_H
 
@@ -7,13 +16,6 @@
 typedef class cInput *pcInput, &rcInput;
 
 using namespace std;
-
-/*extern FILE *in;
-int  NextLabel2   ( char [80] );
-int  ReadString  ( char [80] );
-void PrintHeader ( void );
-void StrUpper    ( char * );
-void StrLower    ( char * );*/
 
 class cInput
 {

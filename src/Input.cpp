@@ -1,18 +1,19 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*  Copyright (c) 2019 <GTEP> - All Rights Reserved                            *
+*  This file is part of HERMES Project.                                       *
+*  Unauthorized copying of this file, via any medium is strictly prohibited.  *
+*  Proprietary and confidential.                                              *
+*                                                                             *
+*  Developers:                                                                *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <strstream>
-#include <cmath>
-#include <iomanip>
 #include <time.h>
 #include <stdio.h>
-#include <stdlib.h>     // abs()
-#include <vector>
 #include "input.h"
 #include "defs.h"
-
 #include <cuda_runtime.h>
-
 
 using namespace std;
 // -------------------------------------------------------------------------
@@ -933,7 +934,7 @@ void cInput::ReadGpuSpecification()
 
 	
 		
-	IF_DEBUGGING {
+	if (DEBUGGING) {
 		outfile.open("GPUsInformation.out");
 
 		outfile << "======================================================== " << endl;
@@ -968,7 +969,7 @@ void cInput::ReadGpuSpecification()
 
 	// *********************************** Print GPUs Information: ***********************************
 
-		IF_DEBUGGING {
+		if (DEBUGGING) {
 			outfile << "======================================================== " << endl;
 			outfile << endl;
 			outfile << "Device " << dev << " ======= " << deviceProp.name << endl;
@@ -1000,7 +1001,7 @@ void cInput::ReadGpuSpecification()
 
 	}
 
-	IF_DEBUGGING 
+	if (DEBUGGING) 
 		outfile.close(); 
 
 }

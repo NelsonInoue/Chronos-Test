@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\FemOneGPU.cpp" />
-    <ClCompile Include="src\GPU.cpp" />
     <ClCompile Include="src\Input.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -23,7 +22,6 @@
   <ItemGroup>
     <ClInclude Include="include\defs.h" />
     <ClInclude Include="include\FemOneGPU.h" />
-    <ClInclude Include="include\GPU.h" />
     <ClInclude Include="include\Input.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -95,6 +93,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
