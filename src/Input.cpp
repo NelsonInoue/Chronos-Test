@@ -823,10 +823,6 @@ int cInput::ReadDiagonalFormat()
 		{
 			ProcessDiaFormatPartFull( );
 		}
-		else if (streq(label, "OFFSETS.FULL.PART"))
-		{
-			ProcessDiaFormatFullPart( );
-		}
 		else if (streq(label, "REMARK"))
 		{
 			continue;
@@ -868,39 +864,6 @@ int cInput::ProcessDiaFormatPartFull()
 
 	/*for( int i = 0; i < _inumDiaPart; i++ )
 		printf("%d  ", off_h[i]);*/
-
-	return(1);	
-
-}
-
-// ============================ ProcessDiaFormatFullPart ==============================
-int cInput::ProcessDiaFormatFullPart()
-{
-	int i, a1, a2;
-
-	if( fscanf(inFile, "%d", &_inumDiaFull ) != 1 )
-	{
-		printf( "\n Error on reading number of BRICK8 elements !!!\n\n" );
-		exit( 0 );
-	}
-
-	offfull_h = (int *)malloc(sizeof(int)*_inumDiaFull);
-	//cudaMallocManaged((void **)&offfull_h, sizeof(int) * _inumDiaFull);
-
-	for(i=0; i<_inumDiaFull; i++)
-		offfull_h[i] = 0;
-
-
-	for(i=0; i<_inumDiaPart; i++) {
-
-		fscanf(inFile, "%d %d", &a1, &a2);
-		offfull_h[a1] = a2;
-
-	}
-
-	/*for( int i = 0; i < _inumDiaFull; i++ )
-		if(offfull_h[i] >0)
-			printf("%d  %d\n", i, offfull_h[i]);*/
 
 	return(1);	
 

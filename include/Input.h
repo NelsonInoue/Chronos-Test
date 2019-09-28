@@ -29,7 +29,7 @@ public:
 	int *NumElemByColor;
 	int **NumElemByGPUbyColor, *NumColorbyGPU;
 	double *GPUData;
-	int *off_h, *offfull_h;
+	int *off_h;
 	double *KDia;
 	double *B_h, *M_full;
 	double *Material_Density_h;
@@ -47,7 +47,6 @@ public:
 	int _iDimBMatrix;      // Dimension of B matrix
 	int _iDimBnlMatrix;    // Dimension of Bnl matrix
 	int _iNumShpNodes, _iNumMapNodes;
-	int _inumDiaFull;
 	int _inumDiaPart;      
 
 	int nummat, numprop, numdof, numnoel, numstr, numbc, numnl, numgpu, setgpu;

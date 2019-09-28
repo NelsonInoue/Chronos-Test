@@ -38,7 +38,7 @@
 extern "C" void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M);
 
 extern "C" void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
-	int *connect, double *coord, double *prop, double *K, int *offfull);
+	int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size);
 
 extern "C" void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
 	int *connect, double *coord, double *X, double *strain);
@@ -262,53 +262,6 @@ __device__ void AssemblyK(double coeff, double C[6][6], double B[6][24], double 
 
 }
 
-//=============================================================================
-__device__ void AssemblyK_OPT(int numno, double coeff, double C[6][6], double B[6][24], double K[24][24], int LM[24], int *offfull_h, double *KDia)
-{
-	int i, j, k;
-	double soma, aux[6][24];
-	int row, col, off_full, off_part;
-
-	for(i=0; i<6; i++) { 
-
-		for(j=0; j<24; j++) {  
-
-			aux[i][j] = 0.;
-
-			for(k=0; k<6; k++) {
-
-				aux[i][j] += C[i][k]*B[k][j];
-
-			}
-
-		}
-
-	}
-
-	// ----------------------------------------------------------------------------------------------------------------
-
-	for(i=0; i<24; i++ ) {  
-
-		row = LM[i];
-
-		for(j=0; j<24; j++ ) {  
-
-			col = LM[j];
-
-			off_full = col - row;
-
-			off_part = offfull_h[(3*numno-1) + off_full] - 1;  // offset 
-
-			KDia[row + off_part*3*numno] += K[i][j];
-
-			//atomicAdd(&KDia[row + off_part*3*numno], aux);
-
-		}
-
-	}
-
-}
-
 //==============================================================================
 __global__ void EvaluateMmatrixKernel(int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M)
 {
@@ -353,7 +306,7 @@ void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNod
 
 
 //==============================================================================
-__global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcolor, int numelcolorprv, int numdof, int nummat, int *connect, double *coord, double *prop, double *K, int *offfull)
+__global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcolor, int numelcolorprv, int numdof, int nummat, int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size)
 {
 	double r, s, t;  
 	double xgaus[2], wgaus[2], coeff, E, p; 
@@ -362,9 +315,9 @@ __global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcol
 	int i, j, LM[24];
 	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
 	double detjac, deriv_x[8], deriv_y[8], deriv_z[8], B[6][24], k[24][24];
-
 	double aux;
 
+	offsets_size /= 2;
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
 	const int yIndex = blockIdx.y*blockDim.y + threadIdx.y;
 	const int thread_id = (gridDim.x*blockDim.x)*yIndex + xIndex;
@@ -466,13 +419,23 @@ __global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcol
 
 			row = LM[i];
 
+			off_part = offsets_size;
+
 			for(j=0; j<24; j++) {  
 
 				col = LM[j]; 
 
 				off_full = col - row;
 
-				off_part = offfull[3*numno-1 + off_full] - 1;  // offset GLOBAL
+				while (true) {
+					if (offsets[off_part] == off_full)
+						break;
+
+					if (offsets[off_part] < off_full)
+						off_part++;
+					else 
+						off_part--;
+				}
 
 				K[row + off_part*3*numno] += k[i][j];
 
@@ -486,12 +449,12 @@ __global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcol
 
 //=====================================================================================================================
 void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
-	int *connect, double *coord, double *prop, double *K, int *offfull)
+	int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size)
 {
 
 	cudaSetDevice(Id);
 
-	AssemblyStiffnessMatrixKernel<<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, prop, K, offfull);
+	AssemblyStiffnessMatrixKernel<<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, prop, K, offsets, offsets_size);
 
 	cudaDeviceSynchronize();
 

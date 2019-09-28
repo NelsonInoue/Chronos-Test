@@ -34,7 +34,7 @@
 extern "C" void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M);
 
 extern "C" void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
-			int *connect, double *coord, double *prop, double *K, int *offfull); 
+			int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size); 
 
 extern "C" void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
 			int *connect, double *coord, double *X, double *strain);
@@ -260,7 +260,7 @@ void cFemOneGPU::AssemblyStiffnessMatrix()
 		dim3 blocksPerGrid(int(sqrt(double(numelcolor[i]))/BlockSizeX)+1, int(sqrt(double(numelcolor[i]))/BlockSizeX)+1);		
 
 		AssemblyStiffnessMatrixColor(blocksPerGrid, threadsPerBlock, Id, in->_iNumMeshNodes, in->_iNumMeshElem, in->_iNumDofNode, in->_iNumElasMat, numelcolor[i], numelcolorprv[i],
-			connect, coord, prop, K, offfull);
+			connect, coord, prop, K, off, in->_inumDiaPart);
 
 	}
 
@@ -324,7 +324,6 @@ void cFemOneGPU::AllocateAndCopyVectors()
 	cudaMalloc((void **)&connect, sizeof(int)*in->_iNumMeshElem*11);
 	cudaMalloc((void **)&K, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes*in->_inumDiaPart);
 	cudaMalloc((void **)&prop, sizeof(double)*2*in->_iNumElasMat);
-	cudaMalloc((void **)&offfull, sizeof(int)*in->_inumDiaFull);
 	cudaMalloc((void **)&stress, sizeof(double)*in->_iNumMeshElem*6);  // 6 stresses and 8 integration points
 	cudaMalloc((void **)&strain, sizeof(double)*in->_iNumMeshElem*6);
 	//cudaMalloc((void **)&con, sizeof(double)*numel*9);
@@ -373,7 +372,6 @@ void cFemOneGPU::AllocateAndCopyVectors()
 	//cudaMemcpy(B, in->B_h, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyHostToDevice);
 	cudaMemcpy(coord, in->coord_h, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyHostToDevice);
 	cudaMemcpy(connect, in->connect_h, sizeof(int)*in->_iNumMeshElem*11, cudaMemcpyHostToDevice);
-	cudaMemcpy(offfull, in->offfull_h, sizeof(int)*in->_inumDiaFull, cudaMemcpyHostToDevice);
 	cudaMemcpy(prop, in->prop_h, sizeof(double)*2*in->_iNumElasMat, cudaMemcpyHostToDevice);
 	cudaMemcpy(supp, in->supp_h, sizeof(int)*(in->_iNumDofNode+1)*in->_iNumSuppNodes, cudaMemcpyHostToDevice);
 
@@ -459,7 +457,6 @@ void cFemOneGPU::FreeMemory()
 	cudaFree(connect_h);
 	cudaFree(GPUData);
 	cudaFree(off_h);
-	cudaFree(offfull_h);
 	cudaFree(KDia);
 	cudaFree(B_h);
 	cudaFree(M_full);*/
