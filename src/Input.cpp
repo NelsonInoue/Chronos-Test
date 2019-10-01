@@ -660,7 +660,7 @@ int cInput::ReadElementProp( void )
 		/*else if (streq(label, "ELEMENT.BRICK20"  )) ProcessBRICK20( );
 		else if (streq(label, "ELEMENT.TETR4"    )) ProcessTETR4( );
 		else if (streq(label, "ELEMENT.TETR10"   )) ProcessTETR10( );*/
-		else if (streq(label, "ELEMENT.NUMBER.BY.COLOR"   )) ProcessNumberbyColor( );
+		else if (streq(label, "COLORING"   )) ProcessNumberbyColor( );
 		else if (streq(label, "REMARK"))
 			continue;
 		else if (streq(label, "END"))
@@ -819,7 +819,7 @@ int cInput::ReadDiagonalFormat()
 			printf("\n Invalid neutral file or label END doesn't exist.\n\n");
 			exit(0);
 		}
-		else if (streq(label, "OFFSETS.PART.FULL"))
+		else if (streq(label, "OFFSETS"))
 		{
 			ProcessDiaFormatPartFull( );
 		}
