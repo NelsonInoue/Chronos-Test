@@ -415,7 +415,7 @@ void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSize
 
 	cudaMemcpy(delta_new_h, delta_new, sizeof(double), cudaMemcpyDeviceToHost);
 	delta_new_ = delta_new_h[0];
-	epsilon  = 0.0000001;
+	epsilon  = 0.001;
 	err = (double)(delta_new_ * epsilon * epsilon) ;
 
 	// ----------------------------------------------------------------------------------------------------------------
