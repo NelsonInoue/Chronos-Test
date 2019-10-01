@@ -57,7 +57,7 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(ProjectDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)\build\$(Configuration)\</IntDir>
-    <IncludePath>D:\Projetos\Hermes\lib\Chronos\include;$(IncludePath)</IncludePath>
+    <IncludePath>.\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)\bin</OutDir>
