@@ -41,7 +41,7 @@ extern "C" void AssemblyStiffnessMatrixColor(dim3 blocksPerGrid, dim3 threadsPer
 	int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size);
 
 extern "C" void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
-	int *connect, double *coord, double *X, double *strain);
+	int *connect, double *coord, double *U, double *strain);
 
 extern "C" void EvaluateStressState(int Id, int BlockSizeX, int _iNumMeshElem, int _iNumElasMat, int *connect, int *LinkMeshColor, double *prop, double *strain, double *stress);
 
@@ -647,13 +647,13 @@ __global__ void EvaluateAverageStrainStateKernel(int numno, int numel, int numel
 
 //=====================================================================================================================
 void EvaluateStrainStateColor(dim3 blocksPerGrid, dim3 threadsPerBlock, int Id, int _iNumMeshNodes, int _iNumMeshElem, int _iNumDofNode, int _iNumElasMat, int numelcolor, int numelcolorprv,
-	int *connect, double *coord, double *X, double *strain)
+	int *connect, double *coord, double *U, double *strain)
 {
 
 	cudaSetDevice(Id);
 
-	//EvaluateStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
-	EvaluateAverageStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, X, strain);
+	//EvaluateStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, U, strain);
+	EvaluateAverageStrainStateKernel <<< blocksPerGrid, threadsPerBlock >>> (_iNumMeshNodes, _iNumMeshElem, numelcolor, numelcolorprv, _iNumDofNode, _iNumElasMat, connect, coord, U, strain);
 
 	cudaDeviceSynchronize();
 

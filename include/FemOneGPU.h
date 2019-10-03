@@ -11,6 +11,7 @@
 #define	_FemGPU_H
 
 #include "Input.h"
+#include "ReadFile_CHR.h"
 #include <vector>
 
 typedef class cInput *pcInput, &rcInput;
@@ -44,7 +45,7 @@ public:
 	double *delta_1_aux, *delta_new, *dTq, *delta_old;
 	double *delta_new_h;
 
-	double *X, *R, *D, *D_Full, *Q, *M, *S, *B, *X_Full;
+	double *U, *R, *D, *D_Full, *Q, *M, *S, *B, *X_Full;
 	int *off;
 
 	int numel_Halo, numelprv_Halo, numno_Halo, numnoprv_Halo;
@@ -63,7 +64,9 @@ public:
 
 	char _anmType[30];
 
-	cFemOneGPU();
+	cFemOneGPU() {};
+	cFemOneGPU(string inputFile);
+	~cFemOneGPU() { delete chrData; };
 	void AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, double *DeltaStrainChr_h, double *DeltaStressChr_h);
 	void PrepareInputData();
 	void AllocateAndCopyVectors(); 
@@ -110,8 +113,19 @@ public:
 	void EvaluateNodalForce(double *dP_h);
 	void LinkColorMapping();
 
-
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+private:
+	int nx, ny, nz;
+	int nNodes;
+	int nOffsets;
+	int nDofNode;
+	int nSupports;
+	int nElements;
+	int nMaterials;
+	ReadFile_CHR *chrData;
+
+	void ReadCHR(string);
 
 };
 

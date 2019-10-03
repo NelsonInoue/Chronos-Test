@@ -10,6 +10,12 @@
     <ClCompile Include="src\Chronos.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\ReadFile.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ReadFile_CHR.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\defs.h">
@@ -19,6 +25,15 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="include\Input.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Error.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ReadFile.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ReadFile_CHR.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

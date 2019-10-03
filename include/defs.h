@@ -9,19 +9,22 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 // Definitions file
-#ifndef __DEFS__
-#define __DEFS__
+#ifndef __DEFS_CHRONOS__
+#define __DEFS_CHRONOS__
+#include "Error.h"
 
-#define VERSION "2019.09"
+namespace Chronos {
 
-//Debugging mode
-static bool DEBUGGING = false;
-static char* DEBUG_FILE = "dean_p1";
+	#define VERSION "2019.09"
 
-#define OUTPUT_DIR			"../output/"
+	//Debugging mode
+	static bool DEBUGGING = false;
+	static char* DEBUG_FILE = "dean_p1";
 
-#define OUTPUT_STRESS   OUTPUT_DIR "StressState.pos"
-#define OUTPUT_STRAIN   OUTPUT_DIR "StrainState.pos"
-#define OUTPUT_EXAMPLES "../examples/"
+	#define OUTPUT_DIR			"../output/"
+	#define OUTPUT_STRESS   OUTPUT_DIR "StressState.pos"
+	#define OUTPUT_STRAIN   OUTPUT_DIR "StrainState.pos"
+	#define OUTPUT_EXAMPLES "../examples/"
+}
 
 #endif

@@ -23,6 +23,8 @@
 #include "defs.h"
 #include <vector>
 
+using namespace Chronos;
+
 // Utilities and system includes
 
 #define streq(s1,s2)	((s1[0]==s2[0]) && strcmp(s1,s2)==0)
@@ -52,9 +54,24 @@ extern "C" void EvaluateNodalForceColor(dim3 blocksPerGrid, dim3 threadsPerBlock
 			int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B);
 
 //=============================================================================
-cFemOneGPU::cFemOneGPU()
+cFemOneGPU::cFemOneGPU(string inputFile)
 {
+	chrData = new ReadFile_CHR();
+	ReadCHR(inputFile);
+}
 
+void cFemOneGPU::ReadCHR(string inputFile)
+{
+	chrData->read_file(inputFile);
+	nx = chrData->get_dim(X);
+	ny = chrData->get_dim(Y);
+	nz = chrData->get_dim(Z);
+	nNodes = chrData->get_nNodes();
+	nOffsets = chrData->get_nOffsets();
+	nDofNode = chrData->get_nDofNode();
+	nElements = chrData->get_nElements();
+	nSupports = chrData->get_nSupports();
+	nMaterials = chrData->get_nMaterials();
 }
 
 //========================================================================================================
@@ -159,7 +176,7 @@ void cFemOneGPU::AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, d
 	/*printf("\n\n         Write Strain State         \n");
 	printf("         ========================================= \n");
 
-	WriteAverageStrainState(in->_iNumMeshElem, strain);*/
+	WriteAverageStrainState(nElements, strain);*/
 
 	// ========= Evaluate strain state =========
 
@@ -173,46 +190,46 @@ void cFemOneGPU::AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, d
 	/*printf("\n\n         Write Stress State         \n");
 	printf("         ========================================= \n");
 
-	WriteAverageStressState(in->_iNumMeshElem, stress);*/
+	WriteAverageStressState(nElements, stress);*/
 
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::ImpositionBoundaryConditionClass()
 {
-	ImpositionBoundaryCondition(Id, BlockSizeX, in->_iNumMeshNodes, in->_iNumSuppNodes, in->_inumDiaPart, supp, K, B);
+	ImpositionBoundaryCondition(Id, BlockSizeX, nNodes, nSupports, nOffsets, supp, K, B);
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::EvaluateMmatrixClass()
 {
-	EvaluateMmatrix(Id, BlockSizeX, in->_iNumMeshNodes, in->_iNumDofNode, in->_inumDiaPart, K, M);
+	EvaluateMmatrix(Id, BlockSizeX, nNodes, nDofNode, nOffsets, K, M);
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::ImpositionBoundaryConditionNeumannClass()
 {
-	ImpositionBoundaryConditionNeumann(Id, BlockSizeX, in->_iNumMeshNodes, in->_iNumSuppNodes, supp, B);
+	ImpositionBoundaryConditionNeumann(Id, BlockSizeX, nNodes, nSupports, supp, B);
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::SolveLinearSystemClass(double *VectorChr_X_h)
 {
-	SolveLinearSystem(Id, in->_inumDiaPart, in->_iNumDofNode, BlockSizeX, BlockMultiProcPerGpu, in->_iNumMeshNodes, B, M, K, off, t, &CGTime, &CGIter, &CGError, X, R, D, Q, S,
+	SolveLinearSystem(Id, nOffsets, nDofNode, BlockSizeX, BlockMultiProcPerGpu, nNodes, B, M, K, off, t, &CGTime, &CGIter, &CGError, U, R, D, Q, S,
 		delta_1_aux, delta_new, dTq, delta_old, delta_new_h);
 
 	cudaSetDevice(Id);
-	cudaMemcpy(VectorChr_X_h, X, sizeof(double)*in->_iNumMeshNodes*in->_iNumDofNode, cudaMemcpyDeviceToHost);
+	cudaMemcpy(VectorChr_X_h, U, sizeof(double)*nNodes*nDofNode, cudaMemcpyDeviceToHost);
 
 }
 
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::EvaluateStressStateClass(double *DeltaStressChr_h)
 {
-	EvaluateStressState(Id, BlockSizeX, in->_iNumMeshElem, in->_iNumElasMat, connect, LinkMeshColor, prop, strain, stress);
+	EvaluateStressState(Id, BlockSizeX, nElements, nMaterials, connect, LinkMeshColor, prop, strain, stress);
 
 	cudaSetDevice(Id);
-	cudaMemcpy(DeltaStressChr_h, stress, sizeof(double)*in->_iNumMeshElem*6, cudaMemcpyDeviceToHost);
+	cudaMemcpy(DeltaStressChr_h, stress, sizeof(double)*nElements*6, cudaMemcpyDeviceToHost);
 
 }
 
@@ -223,7 +240,7 @@ void cFemOneGPU::EvaluateStrainState(double *DeltaStrainChr_h)
 	double time;
 
 	cudaSetDevice(Id);
-	cudaMemset(strain, 0, sizeof(double)*in->_iNumMeshElem*6);
+	cudaMemset(strain, 0, sizeof(double)*nElements*6);
 
 	time = clock();
 
@@ -232,12 +249,12 @@ void cFemOneGPU::EvaluateStrainState(double *DeltaStrainChr_h)
 		dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
 		dim3 blocksPerGrid(int(sqrt(double(numelcolor[i]))/BlockSizeX)+1, int(sqrt(double(numelcolor[i]))/BlockSizeX)+1);		
 
-		EvaluateStrainStateColor(blocksPerGrid, threadsPerBlock, Id, in->_iNumMeshNodes, in->_iNumMeshElem, in->_iNumDofNode, in->_iNumElasMat, numelcolor[i], numelcolorprv[i],
-			connect, coord, X, strain);
+		EvaluateStrainStateColor(blocksPerGrid, threadsPerBlock, Id, nNodes, nElements, nDofNode, nMaterials, numelcolor[i], numelcolorprv[i],
+			connect, coord, U, strain);
 
 	}
 
-	cudaMemcpy(DeltaStrainChr_h, strain, sizeof(double)*in->_iNumMeshElem*6, cudaMemcpyDeviceToHost);
+	cudaMemcpy(DeltaStrainChr_h, strain, sizeof(double)*nElements*6, cudaMemcpyDeviceToHost);
 
 	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
@@ -250,7 +267,7 @@ void cFemOneGPU::AssemblyStiffnessMatrix()
 	double time;
 
 	cudaSetDevice(Id);
-	cudaMemset(K, 0, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes*in->_inumDiaPart);
+	cudaMemset(K, 0, sizeof(double)*nDofNode*nNodes*nOffsets);
 
 	time = clock();
 
@@ -259,8 +276,8 @@ void cFemOneGPU::AssemblyStiffnessMatrix()
 		dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
 		dim3 blocksPerGrid(int(sqrt(double(numelcolor[i]))/BlockSizeX)+1, int(sqrt(double(numelcolor[i]))/BlockSizeX)+1);		
 
-		AssemblyStiffnessMatrixColor(blocksPerGrid, threadsPerBlock, Id, in->_iNumMeshNodes, in->_iNumMeshElem, in->_iNumDofNode, in->_iNumElasMat, numelcolor[i], numelcolorprv[i],
-			connect, coord, prop, K, off, in->_inumDiaPart);
+		AssemblyStiffnessMatrixColor(blocksPerGrid, threadsPerBlock, Id, nNodes, nElements, nDofNode, nMaterials, numelcolor[i], numelcolorprv[i],
+			connect, coord, prop, K, off, nOffsets);
 
 	}
 
@@ -288,7 +305,7 @@ void cFemOneGPU::PrintTimeCG()
 	fileName2 += ".dat";
 	outfile.open(fileName2.c_str(), ios::app);
 
-	outfile << _get_time() << "  ## Number of nodes = "<< in->_iNumMeshNodes << endl; 
+	outfile << _get_time() << "  ## Number of nodes = "<< nNodes << endl; 
 
 	outfile << "## Assembly Stiffness Matrix" << endl;
 	outfile << "   Sum K = " << setprecision(15) << (double) sumK << endl;
@@ -309,7 +326,7 @@ void cFemOneGPU::PrintTimeCG()
 //==============================================================================
 void cFemOneGPU::AllocateAndCopyVectors()
 {
-	int i, j, GPU_Id;
+	int i, j, GPU_Id, size;
 	double time, FreeMem[4], UsedMem[4], TotalMem[4];
 	size_t free_byte, total_byte;
 
@@ -320,12 +337,12 @@ void cFemOneGPU::AllocateAndCopyVectors()
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
-	cudaMalloc((void **)&coord, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&connect, sizeof(int)*in->_iNumMeshElem*11);
-	cudaMalloc((void **)&K, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes*in->_inumDiaPart);
-	cudaMalloc((void **)&prop, sizeof(double)*2*in->_iNumElasMat);
-	cudaMalloc((void **)&stress, sizeof(double)*in->_iNumMeshElem*6);  // 6 stresses and 8 integration points
-	cudaMalloc((void **)&strain, sizeof(double)*in->_iNumMeshElem*6);
+	cudaMalloc((void **)&coord, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&connect, sizeof(int)*nElements*11);
+	cudaMalloc((void **)&K, sizeof(double)*nDofNode*nNodes*nOffsets);
+	cudaMalloc((void **)&prop, sizeof(double)*2*nMaterials);
+	cudaMalloc((void **)&stress, sizeof(double)*nElements*6);  // 6 stresses and 8 integration points
+	cudaMalloc((void **)&strain, sizeof(double)*nElements*6);
 	//cudaMalloc((void **)&con, sizeof(double)*numel*9);
 
 	// ----------------------------------------------------------------------------------------------------------------
@@ -333,15 +350,15 @@ void cFemOneGPU::AllocateAndCopyVectors()
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
-	cudaMalloc((void **)&X, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&R, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&D, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&D_Full, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&X_Full, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&Q, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&M, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&S, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMalloc((void **)&B, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
+	cudaMalloc((void **)&U, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&R, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&D, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&D_Full, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&X_Full, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&Q, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&M, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&S, sizeof(double)*nDofNode*nNodes);
+	cudaMalloc((void **)&B, sizeof(double)*nDofNode*nNodes);
 
 	cudaMalloc((void **)&delta_new, sizeof(double));
 	cudaMalloc((void **)&delta_old, sizeof(double));
@@ -349,13 +366,13 @@ void cFemOneGPU::AllocateAndCopyVectors()
 
 	cudaMalloc((void **) &delta_1_aux, sizeof(double)*BlockMultiProcPerGpu);
 
-	cudaMalloc((void **)&off, sizeof(int)*in->_inumDiaPart);
-	cudaMalloc((void **)&supp, sizeof(int)*(in->_iNumDofNode+1)*in->_iNumSuppNodes);
+	cudaMalloc((void **)&off, sizeof(int)*nOffsets);
+	cudaMalloc((void **)&supp, sizeof(int)*(nDofNode+1)*nSupports);
 
 	delta_new_h = (double *)malloc(sizeof(double));
-	X_h = (double *)malloc(sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
-	strain_h = (double *)malloc(sizeof(double)*in->_iNumMeshElem*6*8);
-	stress_h = (double *)malloc(sizeof(double)*in->_iNumMeshElem*6*8);
+	X_h = (double *)malloc(sizeof(double)*nDofNode*nNodes);
+	strain_h = (double *)malloc(sizeof(double)*nElements*6*8);
+	stress_h = (double *)malloc(sizeof(double)*nElements*6*8);
 
 	t = (double *)malloc(sizeof(double)*20);
 
@@ -368,12 +385,22 @@ void cFemOneGPU::AllocateAndCopyVectors()
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
-	cudaMemcpy(off, in->off_h, sizeof(int)*in->_inumDiaPart, cudaMemcpyHostToDevice);
-	//cudaMemcpy(B, in->B_h, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyHostToDevice);
-	cudaMemcpy(coord, in->coord_h, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyHostToDevice);
-	cudaMemcpy(connect, in->connect_h, sizeof(int)*in->_iNumMeshElem*11, cudaMemcpyHostToDevice);
-	cudaMemcpy(prop, in->prop_h, sizeof(double)*2*in->_iNumElasMat, cudaMemcpyHostToDevice);
-	cudaMemcpy(supp, in->supp_h, sizeof(int)*(in->_iNumDofNode+1)*in->_iNumSuppNodes, cudaMemcpyHostToDevice);
+	// Offsets
+	cudaMemcpy(off, chrData->ptr_offsets(), sizeof(int)*nOffsets, cudaMemcpyHostToDevice);
+
+	// Coordinates x, y and z
+	for (int dir=0; dir < 3; ++dir)
+		cudaMemcpy(coord+dir*nNodes, chrData->ptr_coord(dir), sizeof(double)*nNodes, cudaMemcpyHostToDevice);
+
+	// Connections (element index, material index, 1, nodes)
+	cudaMemcpy(connect, &chrData->get_connects()[0], sizeof(int)*nElements*11, cudaMemcpyHostToDevice);
+
+	// Elastic properties
+	for (int p=0; p < 2; ++p)
+		cudaMemcpy(prop+p*nMaterials, chrData->ptr_prop(p), sizeof(double)*nMaterials, cudaMemcpyHostToDevice);
+
+	// Supports
+	cudaMemcpy(supp, &chrData->get_supports()[0], sizeof(int)*(nDofNode+1)*nSupports, cudaMemcpyHostToDevice);
 
 	printf("         Time - Copy Vectors CPU->GPU: %0.3f \n", (clock()-time)/CLOCKS_PER_SEC);
 
@@ -414,16 +441,16 @@ void cFemOneGPU::PrepareInputData()
 
 	// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	// xxxxxxxxxxxx Element by GPU by Color
-
-	numcolor = in->NumColorbyGPU[0];
+	int gpu = 0;
+	numcolor = chrData->get_nColorGroups(gpu); //in->NumColorbyGPU[0];
 	numelcolor = (int *)malloc(sizeof(int)*numcolor);
 	numelcolorprv = (int *)malloc(sizeof(int)*numcolor);
 
 	for(i=0; i<numcolor; i++) {
-		numelcolor[i] = in->NumElemByGPUbyColor[0][i];
+		numelcolor[i] = chrData->get_color_group(gpu, i).size();//in->NumElemByGPUbyColor[0][i];
 
 		if(i==0) numelcolorprv[i] = 0;
-		else     numelcolorprv[i] = numelcolorprv[i-1] + in->NumElemByGPUbyColor[0][i-1];
+		else     numelcolorprv[i] = numelcolorprv[i-1] + chrData->get_color_group(gpu, i-1).size();//in->NumElemByGPUbyColor[0][i-1];
 	}
 
 	// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -469,10 +496,10 @@ void cFemOneGPU::PrintKDia()
 	using namespace std;
 
 	double *K_h;
-	K_h = (double *)malloc(in->_iNumDofNode*in->_iNumMeshNodes*in->_inumDiaPart*sizeof(double));
+	K_h = (double *)malloc(nDofNode*nNodes*nOffsets*sizeof(double));
 
 	cudaSetDevice(Id);
-	cudaMemcpy(K_h, K, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes*in->_inumDiaPart, cudaMemcpyDeviceToHost);
+	cudaMemcpy(K_h, K, sizeof(double)*nDofNode*nNodes*nOffsets, cudaMemcpyDeviceToHost);
 
 	ofstream outfile;
 	std::string fileName = "KDia";
@@ -484,14 +511,14 @@ void cFemOneGPU::PrintKDia()
 
 	outfile << endl;
 
-	for(j=0; j<3*in->_iNumMeshNodes; j++ ) {
+	for(j=0; j<3*nNodes; j++ ) {
 
 		outfile << j << " - " ;
 
-		for(i=0; i<in->_inumDiaPart; i++ ) {
+		for(i=0; i<nOffsets; i++ ) {
 
-			if(fabs(K_h[j + i*3*in->_iNumMeshNodes]) > 0.01)
-				outfile << K_h[j + i*3*in->_iNumMeshNodes] << " " ;
+			if(fabs(K_h[j + i*3*nNodes]) > 0.01)
+				outfile << K_h[j + i*3*nNodes] << " " ;
 		}
 
 		outfile << endl;
@@ -506,11 +533,11 @@ void cFemOneGPU::PrintDispl()
 	int i, j, k;
 	using namespace std;
 
-	double *X_h;
-	X_h = (double *)malloc(in->_iNumDofNode*in->_iNumMeshNodes*sizeof(double));
+	double *U_h;
+	U_h = (double *)malloc(nDofNode*nNodes*sizeof(double));
 
 	cudaSetDevice(Id);
-	cudaMemcpy(X_h, X, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyDeviceToHost);
+	cudaMemcpy(U_h, U, sizeof(double)*nDofNode*nNodes, cudaMemcpyDeviceToHost);
 
 	ofstream outfile;
 	std::string fileName = "Displ";
@@ -530,7 +557,7 @@ void cFemOneGPU::PrintDispl()
 
 			for(i=0; i<22; i++) {
 
-				outfile << X_h[3*cont+2] << " ";
+				outfile << U_h[3*cont+2] << " ";
 
 				cont++;
 
@@ -555,10 +582,10 @@ void cFemOneGPU::PrintRate(double *rate)
 	using namespace std;
 
 	double *rate_h;
-	rate_h = (double *)malloc(6*in->_iNumMeshElem*sizeof(double));
+	rate_h = (double *)malloc(6*nElements*sizeof(double));
 
 	cudaSetDevice(Id);
-	cudaMemcpy(rate_h, rate, sizeof(double)*6*in->_iNumMeshElem, cudaMemcpyDeviceToHost);
+	cudaMemcpy(rate_h, rate, sizeof(double)*6*nElements, cudaMemcpyDeviceToHost);
 
 	ofstream outfile;
 	std::string fileName = "Rate";
@@ -578,7 +605,7 @@ void cFemOneGPU::PrintRate(double *rate)
 
 			for(i=0; i<21; i++) {
 
-				outfile << rate_h[cont+2*in->_iNumMeshElem] << " ";
+				outfile << rate_h[cont+2*nElements] << " ";
 
 				cont++;
 
@@ -606,7 +633,7 @@ void cFemOneGPU::WriteAverageStrainState(int numel, double *strain)
 
 	time = clock();
 
-	cudaMemcpy(strain_h, strain, sizeof(double)*in->_iNumMeshElem*6*8, cudaMemcpyDeviceToHost);
+	cudaMemcpy(strain_h, strain, sizeof(double)*nElements*6*8, cudaMemcpyDeviceToHost);
     
     outFile = fopen(OUTPUT_STRAIN, "w");
     
@@ -650,7 +677,7 @@ void cFemOneGPU::WriteAverageStressState(int numel, double *stress)
 
 	time = clock();
 
-	cudaMemcpy(stress_h, stress, sizeof(double)*in->_iNumMeshElem*6*8, cudaMemcpyDeviceToHost);
+	cudaMemcpy(stress_h, stress, sizeof(double)*nElements*6*8, cudaMemcpyDeviceToHost);
     
     outFile = fopen(OUTPUT_STRESS, "w");
     
@@ -688,31 +715,33 @@ void cFemOneGPU::WriteAverageStressState(int numel, double *stress)
 
 void cFemOneGPU::LinkMeshGridMapping(int GridCoord)
 {
-	int _nx, _ny, _nz, _nsi1, _nsi2, _nsj1, _nsj2, _nov, _nun, _Ti, _Tj, _Tk;
+	int _nsi1, _nsj1, _nun, Ti, Tj, Tk;
 	int PosMesh, PosCell, cont;
 	int i, j, k;
+	
+	_nsi1 = chrData->get_extension_size(LEFT);
+	_nsj1 = chrData->get_extension_size(FRONT);
+	_nun = chrData->get_extension_size(DOWN);
 
-	_nx = in->nx; _ny = in->ny; _nz = in->nz; _nsi1 = in->nsi1; _nsi2 = in->nsi2; _nsj1 = in->nsj1; _nsj2 = in->nsj2; _nov = in->nov; _nun = in->nun;
-
-	_Ti = _nsi1 + _nx + _nsi2;
-	_Tj = _nsj1 + _ny + _nsj2;
-	_Tk = _nov  + _nz + _nun;
+	Ti = _nsi1 + nx + chrData->get_extension_size(RIGHT);
+	Tj = _nsj1 + ny + chrData->get_extension_size(BACK);
+	Tk = chrData->get_extension_size(UP) + nz + _nun;
 
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Link local mesh - global mesh position
 
-	LinkMeshMesh_h = (int *)malloc(_nx*_ny*_nz*sizeof(int));
+	LinkMeshMesh_h = (int *)malloc(nx*ny*nz*sizeof(int));
 
 	cont = 0;
 
-	for(k=0; k<_nz; k++) {
+	for(k=0; k<nz; k++) {
 
-		for(j=0; j<_ny; j++) {
+		for(j=0; j<ny; j++) {
 
-			for(i=0; i<_nx; i++) {
+			for(i=0; i<nx; i++) {
 
-				PosMesh = _Ti*_Tj*(_nun+k) + _Ti*(_nsj1+j) + _nsi1 + i;
+				PosMesh = Ti*Tj*(_nun+k) + Ti*(_nsj1+j) + _nsi1 + i;
 
 				// --------------------------------------------------------------------------------
 
@@ -732,24 +761,24 @@ void cFemOneGPU::LinkMeshGridMapping(int GridCoord)
 
 	// Link local mesh - cell position
 
-	LinkMeshCell_h = (int *)malloc(_nx*_ny*_nz*sizeof(int));
+	LinkMeshCell_h = (int *)malloc(nx*ny*nz*sizeof(int));
 
 	cont = 0;
 
-	for(k=0; k<_nz; k++) {
+	for(k=0; k<nz; k++) {
 
-		for(j=0; j<_ny; j++) {
+		for(j=0; j<ny; j++) {
 
-			for(i=0; i<_nx; i++) {
+			for(i=0; i<nx; i++) {
 
 				switch(GridCoord) { 
 
 				case 0:  // Positive cross product
-					PosCell = _nx*_ny*(_nz-1-k) + _nx*(_ny-1-j) + i;  // Namorado
+					PosCell = nx*ny*(nz-1-k) + nx*(ny-1-j) + i;  // Namorado
 					break; 
 
 				case 1: // Negative cross product
-					PosCell = _nx*_ny*(_nz-1-k) + _Ti*j + i;       // Campo B
+					PosCell = nx*ny*(nz-1-k) + Ti*j + i;       // Campo B
 					break; 
 
 				}
@@ -831,24 +860,20 @@ void cFemOneGPU::LinkMeshGridMapping(int GridCoord)
 void cFemOneGPU::EvalColoringMeshBrick8Struct()
 {
 	int i, j, k, l;
-	int _nx, _ny, _nz;
 	int pos, add_i, add_ij;
-
 	int color_beg[8], i_beg[8], j_beg[8], k_beg[8];
 
-	_nx = in->nx; _ny = in->ny; _nz = in->nz;
 
 	color_beg[0] = 0;
-
 	color_beg[0] = 0;
 	color_beg[1] = 1;
-	color_beg[2] = _nx;
-	color_beg[3] = _nx+1;
+	color_beg[2] = nx;
+	color_beg[3] = nx+1;
 
-	color_beg[4] = 0+_nx*_ny;
-	color_beg[5] = 1+_nx*_ny;
-	color_beg[6] = _nx+_nx*_ny;
-	color_beg[7] = _nx+1+_nx*_ny;
+	color_beg[4] = 0+nx*ny;
+	color_beg[5] = 1+nx*ny;
+	color_beg[6] = nx+nx*ny;
+	color_beg[7] = nx+1+nx*ny;
 
 	i_beg[0] = 0;
 	i_beg[1] = 1;
@@ -889,13 +914,13 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 		add_i = 0;
 		add_ij = 0;
 
-		for(k=k_beg[l]; k<_nz; k+=2) {
+		for(k=k_beg[l]; k<nz; k+=2) {
 
 			add_i = 0;
 
-			for(j=j_beg[l]; j<_ny; j+=2) {
+			for(j=j_beg[l]; j<ny; j+=2) {
 
-				for(i=i_beg[l]; i<_nx; i+=2) {
+				for(i=i_beg[l]; i<nx; i+=2) {
 
 					ElemColorByGPU[l].push_back(pos);  // Begin in 0
 
@@ -903,12 +928,12 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 
 				}
 
-				add_i += 2*_nx;
+				add_i += 2*nx;
 				pos = color_beg[l] + add_i + add_ij;
 
 			}
 
-			add_ij += 2*_nx*_ny;
+			add_ij += 2*nx*ny;
 			pos = color_beg[l] + add_ij;
 
 		}
@@ -924,7 +949,7 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 
 	// --------------------------------------------------------------------------------------------
 
-	int numelem = _nx*_ny*_nz;  // Total number of elements
+	int numelem = nx*ny*nz;  // Total number of elements
 
 	if(numelem != cont)
 		printf("\n         Problem with the coloring algorihm!\n");
@@ -934,7 +959,7 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 	// --------------------------------------------------------------------------------------------
 
 	int *LinkMeshMeshColorAux_h;
-	LinkMeshMeshColorAux_h = (int *)malloc(_nx*_ny*_nz*sizeof(int));
+	LinkMeshMeshColorAux_h = (int *)malloc(nx*ny*nz*sizeof(int));
 
 	cont = 0;
 
@@ -953,11 +978,12 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 
 	// --------------------------------------------------------------------------------------------
 
-	for(i=0; i<in->_iNumMeshElem; i++) {
+	for(i=0; i<nElements; i++) {
 
-		for(j=0; j<in->nx*in->ny*in->nz; j++) {
+		for(j=0; j<nx*ny*nz; j++) {
 
-			if(in->connect_h[i]-1 == LinkMeshMeshColorAux_h[j]) LinkMeshMeshColor_h[j] = i;  // Begin in 0
+			if(chrData->get_element_pos(i)-1 == LinkMeshMeshColorAux_h[j]) 
+				LinkMeshMeshColor_h[j] = i;  // Begin in 0
 
 		}
 
@@ -979,8 +1005,8 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
-	cudaMemcpy(LinkMeshMeshColor, LinkMeshMeshColor_h, sizeof(int)*in->nx*in->ny*in->nz, cudaMemcpyHostToDevice);
-	cudaMemcpy(LinkMeshCellColor, LinkMeshCellColor_h, sizeof(int)*in->nx*in->ny*in->nz, cudaMemcpyHostToDevice);
+	cudaMemcpy(LinkMeshMeshColor, LinkMeshMeshColor_h, sizeof(int)*nx*ny*nz, cudaMemcpyHostToDevice);
+	cudaMemcpy(LinkMeshCellColor, LinkMeshCellColor_h, sizeof(int)*nx*ny*nz, cudaMemcpyHostToDevice);
 
 	// ============================================================
 	//IF_DEBUGGING { 
@@ -1045,20 +1071,20 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 //=============== x =============== x =============== x =============== x =============== x =============== x ===============
 void cFemOneGPU::AllocateAndCopyVectorsPartialCoupling()
 {
-	int numelres = in->nx*in->ny*in->nz;
+	int numelres = nx*ny*nz;
 	
 	LinkMeshMeshColor_h = (int *)malloc(numelres*sizeof(int));
 	LinkMeshCellColor_h = (int *)malloc(numelres*sizeof(int));
-	LinkMeshColor_h = (int *)malloc(in->_iNumMeshElem*sizeof(int));
+	LinkMeshColor_h = (int *)malloc(nElements*sizeof(int));
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
 	cudaMalloc((void **)&dP, sizeof(double)*numelres);
 	cudaMalloc((void **)&LinkMeshMeshColor, sizeof(int)*numelres);
 	cudaMalloc((void **)&LinkMeshCellColor, sizeof(int)*numelres);
-	cudaMalloc((void **)&LinkMeshColor, sizeof(int)*in->_iNumMeshElem);
+	cudaMalloc((void **)&LinkMeshColor, sizeof(int)*nElements);
 
-	//F_h = (double *)malloc(sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
+	//F_h = (double *)malloc(sizeof(double)*nDofNode*nNodes);
 
 }
 
@@ -1071,10 +1097,10 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 	cudaSetDevice(Id);
 
 	// Copying the pore pressure from CPU to GPU memory:
-	cudaMemcpy(dP, dP_h, sizeof(double)*in->nx*in->ny*in->nz, cudaMemcpyHostToDevice);
+	cudaMemcpy(dP, dP_h, sizeof(double)*nx*ny*nz, cudaMemcpyHostToDevice);
 
 	// Cleaning vectors:
-	cudaMemset(B, 0, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes);
+	cudaMemset(B, 0, sizeof(double)*nDofNode*nNodes);
 	
 	time = clock();
 
@@ -1083,13 +1109,13 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 		dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
 		dim3 blocksPerGrid(int(sqrt(double(numelcolornodalforce[i]))/BlockSizeX)+1, int(sqrt(double(numelcolornodalforce[i]))/BlockSizeX)+1);		
 
-		EvaluateNodalForceColor(blocksPerGrid, threadsPerBlock, Id, in->_iNumMeshNodes, in->_iNumMeshElem, in->_iNumDofNode, in->_iNumElasMat, numelcolornodalforce[i], numelcolornodalforceprv[i],
+		EvaluateNodalForceColor(blocksPerGrid, threadsPerBlock, Id, nNodes, nElements, nDofNode, nMaterials, numelcolornodalforce[i], numelcolornodalforceprv[i],
 			connect, coord, LinkMeshMeshColor, LinkMeshCellColor, dP, B);
 
 	}
 
-	std::vector<double> F_h(in->_iNumDofNode*in->_iNumMeshNodes);
-	cudaMemcpy(&F_h[0], B, sizeof(double)*in->_iNumDofNode*in->_iNumMeshNodes, cudaMemcpyDeviceToHost);
+	std::vector<double> F_h(nDofNode*nNodes);
+	cudaMemcpy(&F_h[0], B, sizeof(double)*nDofNode*nNodes, cudaMemcpyDeviceToHost);
 
 	// ============================================================
 	//IF_DEBUGGING { 
@@ -1139,25 +1165,15 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 {
 
-	int i, j, k, l, kaux;
-	double StressInitialAux;
+	int i, j, k, l, kaux, Ti, Tj, Tk, ElemIdx, ElemColorIdx, pos;
+	double StressInitialAux, densCurr, densPrev, K0x, K0y;  
+	//  dg = grain density, ds = saturated density,K0x = relation between Sx and Sz, K0y = relation between Sy and Sz
+	double dw = 9810., ZcenterCurr, ZcenterPrev, Ztop;
 
-	int _nx, _ny, _nz, _nsi1, _nsi2, _nsj1, _nsj2, _nov, _nun, Ti, Tj, Tk;
-
-	int ElemIdx, ElemColorIdx;
+	Ti = chrData->get_extension_size(LEFT) + nx + chrData->get_extension_size(RIGHT);
+	Tj = chrData->get_extension_size(FRONT) + ny + chrData->get_extension_size(BACK);
+	Tk = chrData->get_extension_size(UP) + nz + chrData->get_extension_size(DOWN);
 	
-	double densCurr, densPrev, K0x, K0y;  //  dg = grain density, ds = saturated density,K0x = relation between Sx and Sz, K0y = relation between Sy and Sz
-	double dw = 9810., Z;
-	int pos;
-
-	double ZcenterCurr, ZcenterPrev, Ztop;
-
-	_nx = in->nx; _ny = in->ny; _nz = in->nz; _nsi1 = in->nsi1; _nsi2 = in->nsi2; _nsj1 = in->nsj1; _nsj2 = in->nsj2; _nov = in->nov; _nun = in->nun;
-
-	Ti = _nsi1 + _nx + _nsi2;
-	Tj = _nsj1 + _ny + _nsj2;
-	Tk = _nov  + _nz + _nun;
-
 	// ------------------------------------------------------------------
 
 	for(j=0; j<Tj; j++) {                        // Loop elements in x direcion
@@ -1175,20 +1191,17 @@ void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 				ElemColorIdx = LinkMeshColor_h[ElemIdx];
 
 				// Material density
-
-				densCurr = in->Material_Density_h[in->connect_h[ElemColorIdx+1*in->_iNumMeshElem]-1+0*in->_iNumMeshMat];
-				K0x      = in->Material_Density_h[in->connect_h[ElemColorIdx+1*in->_iNumMeshElem]-1+1*in->_iNumMeshMat];
-				K0y      = in->Material_Density_h[in->connect_h[ElemColorIdx+1*in->_iNumMeshElem]-1+2*in->_iNumMeshMat];
-
+				densCurr = chrData->get_prop(ElemColorIdx, DENSITY); 
+				K0x      = chrData->get_prop(ElemColorIdx, K0X); 
+				K0y      = chrData->get_prop(ElemColorIdx, K0Y);
+				
 				// --------------------------------------------------------------------------------
 
 				Ztop = 0.;
 
-				for(int j2=7; j2<11; j2++) {  
+				for(int j2=4; j2<8; j2++) {  
 
-					Z = in->coord_h[in->connect_h[ElemColorIdx + j2*in->_iNumMeshElem]-1 + 2*in->_iNumMeshNodes];
-
-					Ztop += Z/4;
+					Ztop += chrData->get_coord(ElemColorIdx, j2, Z)/4;
 
 				}
 
@@ -1196,11 +1209,9 @@ void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 
 				ZcenterCurr = 0.;
 
-				for(int j2=3; j2<11; j2++) { 
+				for(int j2=0; j2<8; j2++) { 
 
-					Z = in->coord_h[in->connect_h[ElemColorIdx + j2*in->_iNumMeshElem]-1 + 2*in->_iNumMeshNodes];
-
-					ZcenterCurr += Z/8;  
+					ZcenterCurr += chrData->get_coord(ElemColorIdx, j2, Z)/8;  
 
 				}
 
@@ -1218,9 +1229,9 @@ void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 				densPrev = densCurr;
 		
 				// (-) negative stress = rock/soil mechanics
-				StressTotalChr_h[ElemIdx+0*in->_iNumMeshElem] = K0x*StressInitialAux;  // Sx
-				StressTotalChr_h[ElemIdx+1*in->_iNumMeshElem] = K0y*StressInitialAux;  // Sy
-				StressTotalChr_h[ElemIdx+2*in->_iNumMeshElem] =     StressInitialAux;  // Sz
+				StressTotalChr_h[ElemIdx+0*nElements] = K0x*StressInitialAux;  // Sx
+				StressTotalChr_h[ElemIdx+1*nElements] = K0y*StressInitialAux;  // Sy
+				StressTotalChr_h[ElemIdx+2*nElements] =     StressInitialAux;  // Sz
 
 				// --------------------------------------------------------------------------------
 
@@ -1241,11 +1252,11 @@ void cFemOneGPU::LinkColorMapping()
 
 	// ------------------------------------------------------------------
 
-	for(i=0; i<in->_iNumMeshElem; i++) {                    
+	for(i=0; i<nElements; i++) {                    
 
 		// Searching in the coloring element list
-		for(j=0; j<in->_iNumMeshElem; j++) { 
-			if((i+1) == in->connect_h[j]) {
+		for(j=0; j<nElements; j++) { 
+			if((i+1) == chrData->get_element_pos(j)) {
 				LinkMeshColor_h[i] = j;
 				break;
 			}
@@ -1255,7 +1266,7 @@ void cFemOneGPU::LinkColorMapping()
 
 	// ------------------------------------------------------------------
 
-	cudaMemcpy(LinkMeshColor, LinkMeshColor_h, sizeof(int)*in->_iNumMeshElem, cudaMemcpyHostToDevice);
+	cudaMemcpy(LinkMeshColor, LinkMeshColor_h, sizeof(int)*nElements, cudaMemcpyHostToDevice);
 
 	// ------------------------------------------------------------------
 
@@ -1265,7 +1276,7 @@ void cFemOneGPU::LinkColorMapping()
 	fileName2 += ".dat";
 	outfile.open(fileName2.c_str());
 
-	for(j=0; j<in->_iNumMeshElem; j++) { 
+	for(j=0; j<nElements; j++) { 
 		
 		outfile << j+1 << "  " << LinkMeshColor_h[j]+1 << endl;
 

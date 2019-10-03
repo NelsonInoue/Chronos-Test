@@ -13,6 +13,8 @@
   <ItemGroup>
     <ClCompile Include="src\FemOneGPU.cpp" />
     <ClCompile Include="src\Input.cpp" />
+    <ClCompile Include="src\ReadFile.cpp" />
+    <ClCompile Include="src\ReadFile_CHR.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\CUDA\CG.cu" />
@@ -21,8 +23,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\defs.h" />
+    <ClInclude Include="include\Error.h" />
     <ClInclude Include="include\FemOneGPU.h" />
     <ClInclude Include="include\Input.h" />
+    <ClInclude Include="include\ReadFile.h" />
+    <ClInclude Include="include\ReadFile_CHR.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C3C14D47-AB5B-4278-B7AB-F3642EED7836}</ProjectGuid>

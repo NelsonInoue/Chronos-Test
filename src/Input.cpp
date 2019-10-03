@@ -16,6 +16,7 @@
 #include <cuda_runtime.h>
 
 using namespace std;
+using namespace Chronos;
 // -------------------------------------------------------------------------
 // Public functions:
 //
