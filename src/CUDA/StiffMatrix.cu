@@ -266,7 +266,7 @@ __device__ void AssemblyK(double coeff, double C[6][6], double B[6][24], double 
 //==============================================================================
 __global__ void EvaluateMmatrixKernel(int _iNumMeshNodes, int _iNumDofNode, int _inumDiaPart, double *K, double *M)
 {
-	int i, off;
+	int off;
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
 	const int yIndex = blockIdx.y*blockDim.y + threadIdx.y;
 	const int thread_id = (gridDim.x*blockDim.x)*yIndex + xIndex;
@@ -310,13 +310,12 @@ void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNod
 __global__ void AssemblyStiffnessMatrixKernel(int numno, int numel, int numelcolor, int numelcolorprv, int numdof, int nummat, int *connect, double *coord, double *prop, double *K, int *offsets, int offsets_size)
 {
 	double r, s, t;  
-	double xgaus[2], wgaus[2], coeff, E, p; 
-	int no, row, col, off_full, off_part, _row; 
+	double xgaus[2], wgaus[2], E, p; 
+	int no, row, col, off_full, off_part; 
 	int ig, jg, kg;  
 	int i, j, LM[24];
 	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
 	double detjac, deriv_x[8], deriv_y[8], deriv_z[8], B[6][24], k[24][24];
-	double aux;
 
 	offsets_size /= 2;
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
@@ -467,8 +466,8 @@ __global__ void EvaluateStrainStateKernel(int numno, int numel, int numelcolor, 
 	double r, s, t;  
 	double xgaus[2], wgaus[2]; 
 	int ig, jg, kg;  
-	int i, j, no, cont;
-	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
+	int i, no, cont;
+	double X[8], Y[8], Z[8], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
 	double detjac, deriv_x[8], deriv_y[8], deriv_z[8];
 
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
@@ -561,8 +560,8 @@ __global__ void EvaluateAverageStrainStateKernel(int numno, int numel, int numel
 	double r, s, t;  
 	double xgaus[2], wgaus[2]; 
 	int ig, jg, kg;  
-	int i, j, no;
-	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
+	int i, no;
+	double X[8], Y[8], Z[8], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
 	double detjac, deriv_x[8], deriv_y[8], deriv_z[8];
 
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;
@@ -796,8 +795,8 @@ __global__ void EvaluateNodalForceKernel(int numno, int numel, int numelcolor, i
 	double r, s, t;  
 	double xgaus[2], wgaus[2]; 
 	int ig, jg, kg;  
-	int i, j, no;
-	double X[8], Y[8], Z[8], C[6][6], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
+	int i, no;
+	double X[8], Y[8], Z[8], phi_r[8], phi_s[8], phi_t[8], jac[3][3], invjac[3][3];
 	double detjac, deriv_x[8], deriv_y[8], deriv_z[8];
 
 	const int xIndex = blockIdx.x*blockDim.x + threadIdx.x;

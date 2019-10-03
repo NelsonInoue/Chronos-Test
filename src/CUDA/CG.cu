@@ -370,10 +370,7 @@ void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSize
 
 	double TotalTime, time0, time1, time2, time3, time4, time5, time6, time7, time8, time9, time10, time11, time12, time13, time14, time15, time_;
 	time0=0.; time1=0.; time2=0.; time3=0.; time4=0.; time5=0.; time6=0.; time7=0.; time8=0.; time9=0.; time10=0.; time11=0.; time12=0.; time13=0.; time14=0.; time15=0.;
-
-	size_t free_byte, total_byte;
-	double FreeMem[4], UsedMem[4], TotalMem[4];
-
+	
     cudaSetDevice(Id);
 	int cont=0;
 	double epsilon, err;

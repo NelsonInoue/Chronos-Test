@@ -335,8 +335,7 @@ void cFemOneGPU::PrintTimeCG()
 void cFemOneGPU::AllocateAndCopyVectors()
 {
 	int i, j, GPU_Id, size;
-	double time, FreeMem[4], UsedMem[4], TotalMem[4];
-	size_t free_byte, total_byte;
+	double time;
 
 	time = clock();
 
@@ -1147,7 +1146,7 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 {
 
-	int i, j, k, l, kaux, Ti, Tj, Tk, ElemIdx, ElemColorIdx, pos;
+	int i, j, k, l, kaux, Ti, Tj, Tk, ElemIdx, ElemColorIdx;
 	double StressInitialAux, densCurr, densPrev, K0x, K0y;  
 	//  dg = grain density, ds = saturated density,K0x = relation between Sx and Sz, K0y = relation between Sy and Sz
 	double dw = 9810., ZcenterCurr, ZcenterPrev, Ztop;
