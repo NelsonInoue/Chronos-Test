@@ -1,3 +1,13 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*  Copyright (c) 2019 <GTEP> - All Rights Reserved                            *
+*  This file is part of HERMES Project.                                       *
+*  Unauthorized copying of this file, via any medium is strictly prohibited.  *
+*  Proprietary and confidential.                                              *
+*                                                                             *
+*  Developers:                                                                *
+*     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #ifndef __ERROR__
 #define __ERROR__
 

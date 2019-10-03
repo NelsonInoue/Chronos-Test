@@ -5,8 +5,8 @@
 #include <cstdlib>
 #include <string.h>
 #include "defs.h"
+#include "GPUInfo.h"
 #include "FemOneGPU.h"
-#include "input.h"
 #include "time.h"
 #include <direct.h>
 
@@ -104,10 +104,9 @@ int main(int argc, char* argv[])
 {
 	char c;
 	clock_t tInitial, tFinal, tTotal;
-
+	
+	GPUInfo g();
 	cFemOneGPU *pcFemOneGPU;             // GPU class object
-	cInput *in;
-
 	
 	mkdir("running");
 	_chdir("running");	
@@ -155,12 +154,9 @@ int main(int argc, char* argv[])
 
 	if(c=='1'){
 		printf ("\n\t Analysis using GPU Processing Scheme........\n\n\n");
-		in = new cInput();
-		in->ReadNumberOfGpus();
-		if(in->numgpu == 1) {
-			pcFemOneGPU = new cFemOneGPU();
-			pcFemOneGPU->Id = in->setgpu;
-			delete in;
+
+		if( 1) {
+			//pcFemOneGPU = new cFemOneGPU(arqinp);
 			//pcFemOneGPU->AnalyzeFemOneGPU();
 		}
 		delete pcFemOneGPU;

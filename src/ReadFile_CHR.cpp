@@ -6,6 +6,7 @@
 *                                                                             *
 *  Developers:                                                                *
 *     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #include "ReadFile_CHR.h"
 #include <iomanip>
@@ -28,7 +29,7 @@ list<int>::iterator find_and_erase(list<int>::iterator ini, list<int> &mylist, i
 ReadFile_CHR::ReadFile_CHR() : ReadFile()
 {
 	nDofNode = 3;
-	dim.resize(3, 0);
+	reservoir_size.resize(3, 0);
 	chr_key = '%';
 	str_comments = "%%";
 }
@@ -100,7 +101,7 @@ void ReadFile_CHR::process_key()
 		sscanf_s(line, "%d", &size);
 		extension_sizes.resize(6,0);
 		sscanf_s(line, "%d %d %d %d %d %d %d %d %d", 
-			&dim[0], &dim[1], &dim[2],
+			&reservoir_size[X], &reservoir_size[Y], &reservoir_size[Z],
 			&extension_sizes[LEFT], &extension_sizes[RIGHT], &extension_sizes[FRONT], 
 			&extension_sizes[BACK], &extension_sizes[UP], &extension_sizes[DOWN ]);
 	}
@@ -135,14 +136,18 @@ void ReadFile_CHR::process_key()
 	}
 
 	else if (strcmp(key, "NUMBER.GPUS")==0) {
-		sscanf_s(line, "%d", &size);
-		gpus.resize(size);
+		int aux;
+		if (sscanf_s(line, "%d %d", &size, &aux)==1){
+			gpus.resize(size);
 
-		for (int i=0; i < size; ++i)
-			if (fscanf(fin, "%d", &gpus[i])==0) {
-				WRITE_ERROR(103, "Invalid value for NUMBER.GPUS key.")	;
-				break;
-			}
+			for (int i=0; i < size; ++i)
+				if (fscanf(fin, "%d", &gpus[i])==0) {
+					WRITE_ERROR(103, "Invalid value for NUMBER.GPUS key.")	;
+					break;
+				}
+		}
+		else
+			gpus.resize(size, aux);
 	}
 }
 

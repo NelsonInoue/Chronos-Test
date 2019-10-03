@@ -8,25 +8,27 @@
 *     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
 *     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#pragma once
 
-// Definitions file
-#ifndef __DEFS_CHRONOS__
-#define __DEFS_CHRONOS__
-#include "Error.h"
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <cuda_runtime.h>
 
-namespace Chronos {
+using namespace std;
 
-	#define VERSION "2019.09"
 
-	//Debugging mode
-	static bool DEBUGGING = false;
-	static char* DEBUG_FILE = "dean_p1";
+class GPUInfo
+{
 
-	#define OUTPUT_DIR			"../output/"
-	#define OUTPUT_STRESS   OUTPUT_DIR "StressState.pos"
-	#define OUTPUT_STRAIN   OUTPUT_DIR "StrainState.pos"
-	#define OUTPUT_EXAMPLES "../examples/"
+public:
+	static int nGPUs;
+	static vector<cudaDeviceProp> devices;
+	
+	GPUInfo();
+	static void ReadGpuSpecification();
+	static void ReportGpuSpecification(ostream* out=&cout);
+	static void ReportGpuMemory(ostream* out=&cout);
+};
 
-}
-
-#endif

@@ -6,6 +6,7 @@
 *                                                                             *
 *  Developers:                                                                *
 *     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #include "ReadFile.h"
 #include <sstream>

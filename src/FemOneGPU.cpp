@@ -5,6 +5,7 @@
 *  Proprietary and confidential.                                              *
 *                                                                             *
 *  Developers:                                                                *
+*     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
 *     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #include <fstream>
@@ -54,24 +55,37 @@ extern "C" void EvaluateNodalForceColor(dim3 blocksPerGrid, dim3 threadsPerBlock
 			int *connect, double *coord, int *LinkMeshMeshColor, int *LinkMeshCellColor, double *dP, double *B);
 
 //=============================================================================
-cFemOneGPU::cFemOneGPU(string inputFile)
+
+void cFemOneGPU::ReadCHR(string filename)
 {
-	chrData = new ReadFile_CHR();
-	ReadCHR(inputFile);
+	ReadFile_CHR* chrData_tmp = new ReadFile_CHR();
+	chrData_tmp->read_file(filename);
+
+	SetChrData(chrData_tmp);
 }
 
-void cFemOneGPU::ReadCHR(string inputFile)
+void cFemOneGPU::SetChrData(ReadFile_CHR *chrData_)
 {
-	chrData->read_file(inputFile);
-	nx = chrData->get_dim(X);
-	ny = chrData->get_dim(Y);
-	nz = chrData->get_dim(Z);
+	
+	chrData = chrData_;
+	std::vector<int> sizes = chrData->get_extension_sizes();
+	nx = chrData->get_reservoir_size(X);
+	ny = chrData->get_reservoir_size(Y);
+	nz = chrData->get_reservoir_size(Z);
+	nsi1 = sizes[LEFT];
+	nsi2 = sizes[RIGHT];
+	nsj1 = sizes[FRONT];
+	nsj2 = sizes[BACK];
+	nov = sizes[UP];
+	nun = sizes[DOWN];
 	nNodes = chrData->get_nNodes();
 	nOffsets = chrData->get_nOffsets();
 	nDofNode = chrData->get_nDofNode();
 	nElements = chrData->get_nElements();
 	nSupports = chrData->get_nSupports();
 	nMaterials = chrData->get_nMaterials();
+
+	Id = chrData->get_gpu_id(0);
 }
 
 //========================================================================================================
@@ -85,10 +99,6 @@ void cFemOneGPU::AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, d
 
 		printf("         Read input file             \n");
 		printf("         ========================================= \n");
-
-		in = new cInput(); 
-
-		//in->ReadInputFile();         // Read input file
 
 		// ========= Prepare input data =========
 
@@ -104,8 +114,6 @@ void cFemOneGPU::AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, d
 
 		// ========================================================================================================================================================
 		// ========= Functions for Partial Coupling  =========
-
-		in->ReadMeshGeometry();  // Read geometry data for the coupling
 
 		AllocateAndCopyVectorsPartialCoupling(); 
 
@@ -407,31 +415,7 @@ void cFemOneGPU::AllocateAndCopyVectors()
 	//=============== x =============== x =============== x =============== x =============== x =============== x ===============
 	// GPU global memory information:
 
-	printf("\n");
-	printf("         GPU global memory report \n");
-	printf("         ========================================= ");
-	printf("\n");
-
-	for(i=0; i<in->deviceCount; i++) {
-		cudaSetDevice(i);  // Sets device "0" as the current device
-		cudaMemGetInfo( &free_byte, &total_byte );
-
-		FreeMem[i] = free_byte/1073741824;
-		TotalMem[i] = total_byte/1073741824;
-		UsedMem[i] = TotalMem[i]-FreeMem[i];
-
-	}
-
-	printf("\n");
-	printf("                       GPU 0    GPU 1    GPU 2    GPU 3\n");
-	printf("         Free Memory:  %0.2f Gb  %0.2f Gb  %0.2f Gb  %0.2f Gb \n", FreeMem[0], FreeMem[1], FreeMem[2], FreeMem[3]); 
-	printf("         Used Memory:  %0.2f Gb  %0.2f Gb  %0.2f Gb  %0.2f Gb \n", UsedMem[0], UsedMem[1], UsedMem[2], UsedMem[3]);
-	printf("         Memory:       %0.2f Gb  %0.2f Gb  %0.2f Gb  %0.2f Gb \n", TotalMem[0], TotalMem[1], TotalMem[2], TotalMem[3]);
-	printf("\n");
-	printf("         Total Free Memory:  %0.2f Gb \n", FreeMem[0]+FreeMem[1]+FreeMem[2]+FreeMem[3]); 
-	printf("         Total Used Memory:  %0.2f Gb \n", UsedMem[0]+UsedMem[1]+UsedMem[2]+UsedMem[3]);
-	printf("         Total Memory:       %0.2f Gb \n", TotalMem[0]+TotalMem[1]+TotalMem[2]+TotalMem[3]);
-
+	GPUInfo::ReportGpuMemory();
 }
 
 // ============================ SplitNodesAndElements ==============================
@@ -442,23 +426,23 @@ void cFemOneGPU::PrepareInputData()
 	// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	// xxxxxxxxxxxx Element by GPU by Color
 	int gpu = 0;
-	numcolor = chrData->get_nColorGroups(gpu); //in->NumColorbyGPU[0];
+	numcolor = chrData->get_nColorGroups(gpu); 
 	numelcolor = (int *)malloc(sizeof(int)*numcolor);
 	numelcolorprv = (int *)malloc(sizeof(int)*numcolor);
 
 	for(i=0; i<numcolor; i++) {
-		numelcolor[i] = chrData->get_color_group(gpu, i).size();//in->NumElemByGPUbyColor[0][i];
+		numelcolor[i] = chrData->get_color_group(gpu, i).size();
 
 		if(i==0) numelcolorprv[i] = 0;
-		else     numelcolorprv[i] = numelcolorprv[i-1] + chrData->get_color_group(gpu, i-1).size();//in->NumElemByGPUbyColor[0][i-1];
+		else     numelcolorprv[i] = numelcolorprv[i-1] + chrData->get_color_group(gpu, i-1).size();
 	}
 
 	// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-	multiProcessorCount     = in->GPUData[Id*6+0];
-	maxThreadsPerBlock      = in->GPUData[Id*6+4];
-	maxThreadsPerMultiProc  = in->GPUData[Id*6+5];
-	ThreadsMultiProcPerGpu  = in->GPUData[Id*6+5] * in->GPUData[Id*6+0];  // maxThreadsPerMultiProc X multiProcessorCount
+	multiProcessorCount     = GPUInfo::devices[gpu].multiProcessorCount;
+	maxThreadsPerBlock      = GPUInfo::devices[gpu].maxThreadsPerBlock;
+	maxThreadsPerMultiProc  = GPUInfo::devices[gpu].maxThreadsPerMultiProcessor;
+	ThreadsMultiProcPerGpu  = maxThreadsPerMultiProc * multiProcessorCount;  // maxThreadsPerMultiProc X multiProcessorCount
 	BlockSizeX              = int(sqrt(double(maxThreadsPerBlock))); 
 	BlockSizeY              = BlockSizeX;
 
@@ -715,17 +699,15 @@ void cFemOneGPU::WriteAverageStressState(int numel, double *stress)
 
 void cFemOneGPU::LinkMeshGridMapping(int GridCoord)
 {
-	int _nsi1, _nsj1, _nun, Ti, Tj, Tk;
-	int PosMesh, PosCell, cont;
-	int i, j, k;
+	int  Ti, Tj, Tk, PosMesh, PosCell, cont, i, j, k;
 	
-	_nsi1 = chrData->get_extension_size(LEFT);
-	_nsj1 = chrData->get_extension_size(FRONT);
-	_nun = chrData->get_extension_size(DOWN);
+	nsi1 = chrData->get_extension_size(LEFT);
+	nsj1 = chrData->get_extension_size(FRONT);
+	nun = chrData->get_extension_size(DOWN);
 
-	Ti = _nsi1 + nx + chrData->get_extension_size(RIGHT);
-	Tj = _nsj1 + ny + chrData->get_extension_size(BACK);
-	Tk = chrData->get_extension_size(UP) + nz + _nun;
+	Ti = nsi1 + nx + nsi2;
+	Tj = nsj1 + ny + nsj2;
+	Tk = nov + nz + nun;
 
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -741,7 +723,7 @@ void cFemOneGPU::LinkMeshGridMapping(int GridCoord)
 
 			for(i=0; i<nx; i++) {
 
-				PosMesh = Ti*Tj*(_nun+k) + Ti*(_nsj1+j) + _nsi1 + i;
+				PosMesh = Ti*Tj*(nun+k) + Ti*(nsj1+j) + nsi1 + i;
 
 				// --------------------------------------------------------------------------------
 
@@ -1170,9 +1152,9 @@ void cFemOneGPU::EvaluateInitialStressState(double *StressTotalChr_h)
 	//  dg = grain density, ds = saturated density,K0x = relation between Sx and Sz, K0y = relation between Sy and Sz
 	double dw = 9810., ZcenterCurr, ZcenterPrev, Ztop;
 
-	Ti = chrData->get_extension_size(LEFT) + nx + chrData->get_extension_size(RIGHT);
-	Tj = chrData->get_extension_size(FRONT) + ny + chrData->get_extension_size(BACK);
-	Tk = chrData->get_extension_size(UP) + nz + chrData->get_extension_size(DOWN);
+	Ti = nsi1 + nx + nsi2;
+	Tj = nsj1 + ny + nsj2;
+	Tk = nov + nz + nun;
 	
 	// ------------------------------------------------------------------
 

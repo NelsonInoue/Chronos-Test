@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\FemOneGPU.cpp" />
-    <ClCompile Include="src\Input.cpp" />
+    <ClCompile Include="src\GPUInfo.cpp" />
     <ClCompile Include="src\ReadFile.cpp" />
     <ClCompile Include="src\ReadFile_CHR.cpp" />
   </ItemGroup>
@@ -25,7 +25,7 @@
     <ClInclude Include="include\defs.h" />
     <ClInclude Include="include\Error.h" />
     <ClInclude Include="include\FemOneGPU.h" />
-    <ClInclude Include="include\Input.h" />
+    <ClInclude Include="include\GPUInfo.h" />
     <ClInclude Include="include\ReadFile.h" />
     <ClInclude Include="include\ReadFile_CHR.h" />
   </ItemGroup>

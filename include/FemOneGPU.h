@@ -5,16 +5,15 @@
 *  Proprietary and confidential.                                              *
 *                                                                             *
 *  Developers:                                                                *
+*     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
 *     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #ifndef	_FemGPU_H
 #define	_FemGPU_H
 
-#include "Input.h"
 #include "ReadFile_CHR.h"
 #include <vector>
-
-typedef class cInput *pcInput, &rcInput;
+#include "GPUInfo.h"
 
 //==============================================================================
 // cGPU
@@ -30,9 +29,7 @@ using namespace std;
 class cFemOneGPU
 {
 public:
-
-	cInput *in;
-
+	
 	double delta_new_;
 
 	double _dE;            // Young's modulus
@@ -64,9 +61,9 @@ public:
 
 	char _anmType[30];
 
-	cFemOneGPU() {};
-	cFemOneGPU(string inputFile);
-	~cFemOneGPU() { delete chrData; };
+	cFemOneGPU() { GPUInfo(); };
+	cFemOneGPU(string inputFile) { cFemOneGPU(); ReadCHR(inputFile); }
+	cFemOneGPU(ReadFile_CHR *chr) { cFemOneGPU(); SetChrData(chr); }
 	void AnalyzeFemOneGPU(int ii, int jj, int GridCoord, double *dP_h, double *DeltaStrainChr_h, double *DeltaStressChr_h);
 	void PrepareInputData();
 	void AllocateAndCopyVectors(); 
@@ -116,7 +113,7 @@ public:
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
-	int nx, ny, nz;
+	int nx, ny, nz, nsi1, nsi2, nsj1, nsj2, nov, nun;
 	int nNodes;
 	int nOffsets;
 	int nDofNode;
@@ -125,7 +122,8 @@ private:
 	int nMaterials;
 	ReadFile_CHR *chrData;
 
-	void ReadCHR(string);
+	void SetChrData(ReadFile_CHR *chrData_);
+	void ReadCHR(string filename);
 
 };
 

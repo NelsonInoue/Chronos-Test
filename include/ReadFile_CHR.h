@@ -6,6 +6,7 @@
 *                                                                             *
 *  Developers:                                                                *
 *     - Bismarck G. Souza Jr <bismarck@puc-rio.br>                            *
+*     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #ifndef _READFILE_CHR_H_
 #define _READFILE_CHR_H_
@@ -50,9 +51,10 @@ public:
 	int get_nSupports() { return supports_ids.size(); }
 	int get_nElements() { return elements_ids.size(); }
 	int get_nMaterials() { return nMaterials; }
-	int get_dim(int i) { return dim[i]; }
+	int get_gpu_id(int i) { return gpus[i]; } 
+	int get_reservoir_size(int i) { return reservoir_size[i]; }
 	int get_element_pos(int ele) { return elements_ids[ele]; }
-	int get_extension_size(int i) { return extension_sizes[i]; }	
+	int get_extension_size(int i) { return extension_sizes[i]; }
 	int get_nColorGroups(int gpu) { return coloring_groups[gpu].size(); }
 	int* ptr_offsets() { return &offsets[0]; } 
 	int* ptr_supports_ids() { return &supports_ids[0]; }
@@ -74,7 +76,7 @@ public:
 protected:
 	int nDofNode;							//< Number of degree of freedom per node
 	int nMaterials;							//< Number of materials
-	vector<int> dim;						//< Dimensions: nx, ny, nz
+	vector<int> reservoir_size;				//< Dimensions: nx, ny, nz
 	vector<int> gpus;						//< Used GPUs indexes
 	vector<int> extension_sizes;			//< Sizes: LEFT, RIGHT, FRONT, BACK, UP, DOWN
 	vector<int> offsets;					//< Offsets for sparse matrix (diagonal format)
