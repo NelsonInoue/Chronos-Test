@@ -300,7 +300,7 @@ void EvaluateMmatrix(int Id, int BlockSizeX, int _iNumMeshNodes, int _iNumDofNod
 
 	cudaDeviceSynchronize();
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 
@@ -785,7 +785,7 @@ void EvaluateStressState(int Id, int BlockSizeX, int numel, int nummat, int *con
 
 	cudaDeviceSynchronize();
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 

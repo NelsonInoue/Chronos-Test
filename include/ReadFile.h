@@ -53,6 +53,7 @@ protected:
 	string filename;
 
 	bool read_key_value(char* line);
+	virtual void file_not_found();
 	virtual bool get_line(char* line);
 	virtual void process_file();
 	virtual void process_key() {};

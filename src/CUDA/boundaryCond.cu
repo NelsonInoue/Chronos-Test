@@ -93,7 +93,7 @@ void ImpositionBoundaryCondition(int Id, int BlockSizeX, int _iNumMeshNodes, int
 
 	cudaDeviceSynchronize();
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 
@@ -134,7 +134,7 @@ void ImpositionBoundaryConditionNeumann(int Id, int BlockSizeX, int _iNumMeshNod
 
 	cudaDeviceSynchronize();
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 

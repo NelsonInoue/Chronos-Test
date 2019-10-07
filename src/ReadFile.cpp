@@ -33,7 +33,7 @@ double ReadFile::read_file(string filename_)
 	START_TRY
 
 		if (fopen_s( &fin, filename_.c_str(), "r" ))
-			ERROR(222, "File not found: " + filename_);
+			file_not_found();
 
 		init();
 
@@ -43,9 +43,10 @@ double ReadFile::read_file(string filename_)
 
 		finally();
 
-	END_TRY
-
-	
+	END_TRY	
+	catch(int e){
+		return -1;
+	}
 
 	return (clock()-time)/CLOCKS_PER_SEC;
 }
@@ -100,5 +101,10 @@ bool ReadFile::read_key_value(char* line)
 		return false;
 
 	return true;
+}
+
+void ReadFile::file_not_found()
+{
+	ERROR(222, "File not found: " + filename);
 }
 

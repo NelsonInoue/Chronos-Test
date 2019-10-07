@@ -12,7 +12,7 @@
 // Definitions file
 #ifndef __DEFS_CHRONOS__
 #define __DEFS_CHRONOS__
-#include "Error.h"
+#include "Utils.h"
 
 namespace Chronos {
 

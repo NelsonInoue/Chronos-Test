@@ -10,7 +10,7 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-
+#include "Utils.h"
 #include <stdio.h>
 
 extern "C" void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSizeX, int BlockMultiProcPerGpu, int _iNumMeshNodes, double *B, double *M, double *K, int *off, double *t, double *CGTime, int *CGIter, double *CGError, double *X, double *R, double *D, double *Q, double *S,
@@ -418,7 +418,8 @@ void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSize
 	// ----------------------------------------------------------------------------------------------------------------
 
 	cont = 0;
-	TotalTime = clock();
+	TotalTime = clock();	
+	PRINT_TIME("Solving linear system");
 
 	while(delta_new_ > err && cont < 4000) {
 
@@ -455,8 +456,9 @@ void SolveLinearSystem(int Id, int _inumDiaPart, int _iNumDofNode, int BlockSize
 
 	}  // ---------------------------------------------------------------------------------------------------------------------------------
 
+	END_TIME();
 
-	printf("         Time = %0.3f s / error = %f / iteration = %d\n", (clock()-TotalTime)/CLOCKS_PER_SEC, delta_new_, cont);
+	PRINT("  Error = %e / iterations = %d", delta_new_, cont);
 
 	t[0]=time0; t[1]=time1; t[2]=time2; t[3]=time3; t[4]=time4; t[5]=time5; t[6]=time6; t[7]=time7; t[8]=time8; t[9]=time9; t[10]=time10; t[11]=time11;
 	*CGTime = (clock()-TotalTime)/CLOCKS_PER_SEC;

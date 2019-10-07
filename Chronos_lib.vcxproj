@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\FemOneGPU.cpp" />
     <ClCompile Include="src\GPUInfo.cpp" />
     <ClCompile Include="src\ReadFile.cpp" />
@@ -23,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\defs.h" />
-    <ClInclude Include="include\Error.h" />
+    <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\FemOneGPU.h" />
     <ClInclude Include="include\GPUInfo.h" />
     <ClInclude Include="include\ReadFile.h" />

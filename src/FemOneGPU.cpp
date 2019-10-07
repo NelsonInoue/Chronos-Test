@@ -264,7 +264,7 @@ void cFemOneGPU::EvaluateStrainState(double *DeltaStrainChr_h)
 
 	cudaMemcpy(DeltaStrainChr_h, strain, sizeof(double)*nElements*6, cudaMemcpyDeviceToHost);
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 
@@ -289,7 +289,7 @@ void cFemOneGPU::AssemblyStiffnessMatrix()
 
 	}
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 }
 
@@ -335,9 +335,8 @@ void cFemOneGPU::PrintTimeCG()
 void cFemOneGPU::AllocateAndCopyVectors()
 {
 	int i, j, GPU_Id, size;
-	double time;
-
-	time = clock();
+	
+	PRINT_TIME("Allocating memory to GPU...");
 
 	// ----------------------------------------------------------------------------------------------------------------
 	// Allocating memory for the Assembly of the stiffness matrix
@@ -383,12 +382,12 @@ void cFemOneGPU::AllocateAndCopyVectors()
 
 	t = (double *)malloc(sizeof(double)*20);
 
-	printf("         Time - Allocate GPU Memory: %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time - Allocate GPU Memory: %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
 	//=============== x =============== x =============== x =============== x =============== x =============== x ===============
 	// Copy vectors CPU->GPU:
 
-	time = clock();
+	PRINT_TIME("Copying memory to GPU...");
 
 	cudaSetDevice(Id);  // Sets device "Id" as the current device
 
@@ -409,11 +408,10 @@ void cFemOneGPU::AllocateAndCopyVectors()
 	// Supports
 	cudaMemcpy(supp, &chrData->get_supports()[0], sizeof(int)*(nDofNode+1)*nSupports, cudaMemcpyHostToDevice);
 
-	printf("         Time - Copy Vectors CPU->GPU: %0.3f \n", (clock()-time)/CLOCKS_PER_SEC);
+	END_TIME();
 
 	//=============== x =============== x =============== x =============== x =============== x =============== x ===============
 	// GPU global memory information:
-
 	GPUInfo::ReportGpuMemory();
 }
 
@@ -929,13 +927,14 @@ void cFemOneGPU::EvalColoringMeshBrick8Struct()
 		cont += ElemColorByGPU[l].size();
 
 	// --------------------------------------------------------------------------------------------
-
+	/*
 	int numelem = nx*ny*nz;  // Total number of elements
 
 	if(numelem != cont)
 		printf("\n         Problem with the coloring algorihm!\n");
 	else
 		printf("\n         Coloring algorihm performed well.\n" );
+	*/
 
 	// --------------------------------------------------------------------------------------------
 
@@ -1073,7 +1072,9 @@ void cFemOneGPU::AllocateAndCopyVectorsPartialCoupling()
 void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 {
 	int i, j, k;
-	double time;
+	//double time;
+
+	PRINT_TIME("Evaluating nodal forces");
 
 	cudaSetDevice(Id);
 
@@ -1083,8 +1084,6 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 	// Cleaning vectors:
 	cudaMemset(B, 0, sizeof(double)*nDofNode*nNodes);
 	
-	time = clock();
-
 	for(i=0; i<numcolor; i++) {
 
 		dim3 threadsPerBlock(BlockSizeX, BlockSizeX);
@@ -1137,8 +1136,9 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 
 	// ----------------------------------------------------------------------------------------
 
-	printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
+	//printf("         Time Execution : %0.3f s \n", (clock()-time)/CLOCKS_PER_SEC);
 
+	END_TIME();
 }
 
 //==============================================================================
