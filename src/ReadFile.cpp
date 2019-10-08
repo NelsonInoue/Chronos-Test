@@ -44,6 +44,7 @@ double ReadFile::read_file(string filename_)
 		finally();
 
 	END_TRY	
+
 	catch(int e){
 		return -1;
 	}
@@ -89,13 +90,12 @@ bool ReadFile::read_key_value(char* line)
 		if (str_value){
 			sscanf_s(line, "%s", key, sizeof(key));
 			strcpy(value, ++str_value);
-	}
-
-	else{
-		strcpy(key, line);
-		key[strlen(line)-1]=NULL;
-		value[0]= NULL;
-	}
+		}
+		else{
+			strcpy(key, line);
+			key[strlen(line)-1]=NULL;
+			value[0]= NULL;
+		}
 	}
 	else
 		return false;

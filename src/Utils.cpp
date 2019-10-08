@@ -84,7 +84,7 @@ void PRINT_TIME(string fmt, ...)
 
 void PRINT_LINE()
 { 
-	printf("\n"); 
+	printf("   ##########################################################################\n\n"); 
 }
 
 void PRINT_LINE(string fmt, ...) 
