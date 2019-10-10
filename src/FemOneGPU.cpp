@@ -1095,7 +1095,7 @@ void cFemOneGPU::EvaluateNodalForce(double *dP_h)
 	}
 
 	std::vector<double> F_h(nDofNode*nNodes);
-	cudaMemcpy(&F_h[0], B, sizeof(double)*nDofNode*nNodes, cudaMemcpyDeviceToHost);
+	//cudaMemcpy(&F_h[0], B, sizeof(double)*nDofNode*nNodes, cudaMemcpyDeviceToHost);
 
 	// ============================================================
 	//IF_DEBUGGING { 

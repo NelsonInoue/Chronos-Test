@@ -38,7 +38,7 @@ public:
 	ReadFile() : filename(""), chr_key('*'), str_comments("**"), finish(false),
 		chr_delimiter(' ') {  };
 
-	double read_file(string filename_);
+	double read_file(string filename_, string path="");
 
 protected:
 	bool finish;

@@ -16,17 +16,17 @@ string get_text(string str)	{
 	return str.substr(str.find("'") + 1, str.rfind("'") - 1);
 };
 
-double ReadFile::read_file(string filename_)
+double ReadFile::read_file(string filename_, string path_)
 {
 	double time = clock();
 	auto found = filename_.find_last_of("/\\");
 	if (found != string::npos){
 		filename = filename_.substr(found + 1);
-		path = filename_.substr(0, found);
+		path = path_+filename_.substr(0, found);
 	}
 	else{
 		filename = filename_;
-		path = ".";
+		path = path_==""? "./" : path_;
 	}
 	basename = filename.substr(0, filename.find('.'));
 
