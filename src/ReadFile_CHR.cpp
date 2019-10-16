@@ -160,17 +160,17 @@ void ReadFile_CHR::finally()
 	// Check GPUs specifications
 	if (gpus.size() == 0)
 		gpus.resize(1, 0);
+	
+	// Check offstes
+	if (offsets.size() == 0){
+		create_offsets();
+	}
 
 	// Check coloring groups
 	bool rewrite_elements = false;
 	if (coloring_groups.size() == 0){
 		create_coloring_groups();
 		rewrite_elements = true;
-	}
-
-	// Check offstes
-	if (offsets.size() == 0){
-		create_offsets();
 	}
 
 	// Rewrite chr
@@ -298,33 +298,64 @@ void ReadFile_CHR::create_offsets()
 	printf("\n\n         Creating offsets sparse matrix \n");
 	printf("         ========================================= \n");
 
-	int elem_nNodes, LM[24], k, con, off;
-	list<int> mylist;	
+	int pos1, pos2, node1, node2, elem_nNodes, offset;
+	vector<int> offsets_base(1, 1);	
 
-	for (int i=0; i < get_nElements(); ++i){
+	for (int ele=0; ele < get_nElements(); ++ele){
 		elem_nNodes = connects.size();
 			
-		k = 0;
-		for (int pos=0; pos < elem_nNodes; ++pos){
-			con = 3*(connects[pos][i]-1);
-			LM[k++] = con++;
-			LM[k++] = con++;
-			LM[k++] = con;
-		}
+		for (pos1=0; pos1 < elem_nNodes; ++pos1){
+			node1 = connects[pos1][ele]-1;
 
-		for (int j=0; j < 3*elem_nNodes; ++j){
-			for (k=0; k < 3*elem_nNodes; ++k){
-				// off = row - col
-				off = LM[k] - LM[j];
-				
-				if (find(mylist.begin(), mylist.end(), off) == mylist.end())
-					mylist.push_back(off);
+			for(pos2=pos1+1; pos2 < elem_nNodes; ++pos2){
+				node2 = connects[pos2][ele]-1;
+
+				if (node1 > node2+1)
+					offset = node1 - node2;
+				else if (node2 > node1+1)
+					offset = node2 - node1;
+				else
+					continue;
+
+				if (find(offsets_base.begin(), offsets_base.end(), offset) == offsets_base.end())
+					offsets_base.push_back(offset);
 			}
 		}
 	}
-	mylist.sort();
 
-	offsets = vector<int>(mylist.begin(), mylist.end());
+	// Sort vector
+	sort(offsets_base.begin(), offsets_base.end());
+
+	// Create positive offset vector
+	int size = offsets_base.size();
+	vector<int> offsets_positive(2);
+	offsets_positive[0] = 1;
+	offsets_positive[1] = 2;
+	offsets_positive.reserve(5*size);
+
+	int last_offset = 0;
+	for (auto it=offsets_base.begin(); it != offsets_base.end(); ++it){
+		offset = 3*(*it);
+		if (last_offset < *it -1){
+			offsets_positive.push_back(offset-2);
+			offsets_positive.push_back(offset-1);
+		}
+		offsets_positive.push_back(offset);
+		offsets_positive.push_back(offset+1);
+		offsets_positive.push_back(offset+2);
+		last_offset = *it;
+	}
+
+	// Create offset vector
+	size = offsets_positive.size();
+	offsets.resize(2*size+1, 0);
+
+	int pos=size+1;
+	int neg=size-1;
+	for (auto it=offsets_positive.begin(); it != offsets_positive.end(); ++it){
+		offsets[pos++] = *it;
+		offsets[neg--] = -*it;
+	}
 
 	// Prepare to write
 	append_txt << "%OFFSETS\n";
