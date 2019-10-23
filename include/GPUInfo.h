@@ -30,5 +30,8 @@ public:
 	static void ReadGpuSpecification();
 	static void ReportGpuSpecification(ostream* out=&cout);
 	static void ReportGpuMemory(ostream* out=&cout);
+	static bool CheckError(string filename, int line);
 };
 
+
+#define CHECK_CUDA_ERROR() GPUInfo::CheckError(__FILE__, __LINE__)

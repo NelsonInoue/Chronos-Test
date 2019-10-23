@@ -9,6 +9,7 @@
 *     - Nelson Inoue <inoue@puc-rio.br>                                       *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #include "GPUInfo.h"
+#include "Utils.h"
 
 int GPUInfo::nGPUs;
 vector<cudaDeviceProp> GPUInfo::devices;
@@ -109,3 +110,17 @@ void GPUInfo::ReportGpuMemory(ostream* out)
 	(*out) << "                  -----  -----  -----\n" << line << endl <<endl; 
 }
 
+bool GPUInfo::CheckError(string filename, int line)
+{
+	cudaError_t error = cudaGetLastError();
+	char msg[250];
+
+	if(error != cudaSuccess)
+	{
+		sprintf(msg, "CUDA error: %s", cudaGetErrorString(error));
+		Error(121, msg, filename, line).print_msg();
+		return false;
+	}
+
+	return true;
+}
