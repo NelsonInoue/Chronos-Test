@@ -155,7 +155,7 @@ void ReadFile_CHR::finally()
 {
 	// Check adjacent rocks
 	if (extension_sizes.size() == 0)
-		ERROR(58, "Key %GEOMETRY.SIZES not found!");
+		ERROR(58, "Key GEOMETRY.SIZES not found in file "+filename);
 	
 	// Check GPUs specifications
 	if (gpus.size() == 0)

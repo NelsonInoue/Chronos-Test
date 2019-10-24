@@ -32,7 +32,7 @@ double ReadFile::read_file(string filename_, string path_)
 
 	START_TRY
 
-		if (fopen_s( &fin, filename_.c_str(), "r" ))
+		if (fopen_s( &fin, (path+"/"+filename).c_str(), "r" ))
 			file_not_found();
 
 		init();
